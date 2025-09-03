@@ -1,0 +1,92 @@
+const SHEET_ID = '1nQEruuZJWE1-gqE3gs1czGq2RLJYncE8C8j';
+const FOLDER_ID = '1iZhULc5_rCcV9xME47P';
+
+// ============ GET: Master Data ===========
+function doGet(e) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName('MasterData');
+  const data = sheet.getDataRange().getValues();
+  const kodeCari = e && e.parameter && e.parameter.kode ? e.parameter.kode : null;
+  const result = [];
+  for (let i = 1; i < data.length; i++) {
+    if (!kodeCari || data[i][0] === kodeCari) {
+      result.push({
+        kode: data[i][0],
+        nama: data[i][1],
+        satuan: data[i][2],
+        fileId: data[i][3]
+      });
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ============ POST: Barang Baru / Upload Gambar / Login ===========
+function doPost(e) {
+  try {
+    // --------- Cek Route Login ----------
+    // Mendukung parameter ?route=login di URL
+    var route = (e.parameter && e.parameter.route) ? e.parameter.route : "";
+    if (route === "login") {
+      // ---- Proses Login ----
+      const data = JSON.parse(e.postData.contents);
+      const username = String(data.username || "").trim().toLowerCase();
+      const password = String(data.password || "");
+      if (!username || !password) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false, msg: "Isi username dan password!"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      // Cek di sheet login
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      const sheetLogin = ss.getSheetByName('login');
+      const rows = sheetLogin.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        var rowUser = String(rows[i][0] || "").trim().toLowerCase();
+        var rowPass = String(rows[i][1] || "");
+        var rowNama = String(rows[i][2] || "");
+        var rowLevel = String(rows[i][3] || "");
+        if (username === rowUser && password === rowPass) {
+          return ContentService.createTextOutput(JSON.stringify({
+            success: true,
+            username: rowUser,
+            nama: rowNama,
+            level: rowLevel
+          })).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      // Tidak ketemu
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        msg: "Username atau password salah!"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ---------- Proses Barang Baru / Upload Gambar ----------
+    const params = JSON.parse(e.postData.contents);
+    let fileId = '';
+    if (params.gambarBase64) {
+      const blob = Utilities.newBlob(Utilities.base64Decode(params.gambarBase64.split(',')[1]), MimeType.PNG, params.gambarName || "barang.png");
+      const folder = DriveApp.getFolderById(FOLDER_ID);
+      const file = folder.createFile(blob);
+      fileId = file.getId();
+    }
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName('MasterData');
+    sheet.appendRow([
+      params.kode,
+      params.nama,
+      params.satuan,
+      fileId
+    ]);
+    return ContentService.createTextOutput(JSON.stringify({ success: true, fileId }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      msg: "Error: " + err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}

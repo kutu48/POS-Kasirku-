@@ -1,0 +1,119 @@
+const SHEET_ID = '1nQEruuZJWE1-gqE3gs1czGq2RLJYnc';
+
+// Helper: Normalisasi string tanggal ke yyyy-mm-dd
+function normalizeDate(str) {
+  if (!str) return "";
+  if (str instanceof Date) return Utilities.formatDate(str, "GMT+7", "yyyy-MM-dd");
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0,10);
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    var [d,m,y] = str.split("/");
+    return `${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
+  }
+  return String(str).slice(0,10);
+}
+
+// ===========================
+//       ENDPOINT POST
+// ===========================
+function doPost(e) {
+  try {
+    // 1. Validasi Input
+    if (!e || !e.postData || !e.postData.contents) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, msg: "Data kosong!"}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var data = JSON.parse(e.postData.contents);
+    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, msg: "Tidak ada item penjualan!"}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheetPenerimaan = ss.getSheetByName('Penerimaan');
+    var sheetPenjualan = ss.getSheetByName('Penjualan');
+    if (!sheetPenerimaan || !sheetPenjualan) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, msg: "Sheet tidak ditemukan!"}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 2. Pengurangan Stok FIFO (tanpa hapus baris)
+    var penerimaanData = sheetPenerimaan.getDataRange().getValues();
+
+    for (var idxItem = 0; idxItem < data.items.length; idxItem++) {
+      var item = data.items[idxItem];
+      var kodeBarang = String(item.kode || "").trim();
+      var qtyJual = Number(item.qty) || 0;
+      if (!kodeBarang || qtyJual <= 0) continue;
+
+      // Cari semua baris kodeBarang yang qty_sisa > 0
+      var rowsMatch = [];
+      for (var i = 1; i < penerimaanData.length; i++) { // i=1 skip header
+        if (
+          String(penerimaanData[i][0]).trim() === kodeBarang &&
+          Number(penerimaanData[i][4]) > 0 // kolom 5 = qty_sisa
+        ) {
+          rowsMatch.push({
+            rowIdx: i + 1, // baris di sheet (1-based)
+            idx: i,        // index di array data
+            qty_sisa: Number(penerimaanData[i][4]),
+            tglMasuk: new Date(penerimaanData[i][7]) // kolom 8 = tanggal masuk
+          });
+        }
+      }
+      // Urutkan ASC tanggal masuk (FIFO)
+      rowsMatch.sort(function(a, b) { return a.tglMasuk - b.tglMasuk; });
+
+      // Proses FIFO
+      var qtySisa = qtyJual;
+      var updateRows = [];
+      for (var j = 0; j < rowsMatch.length && qtySisa > 0; j++) {
+        var baris = rowsMatch[j].rowIdx;
+        var stokBaris = rowsMatch[j].qty_sisa;
+        var pakai = Math.min(stokBaris, qtySisa); // ambil sebanyak yg tersedia
+        // Update qty_sisa di sheet
+        sheetPenerimaan.getRange(baris, 5).setValue(stokBaris - pakai); // kolom 5 = qty_sisa
+        updateRows.push({row: baris, newQty: stokBaris - pakai});
+        qtySisa -= pakai;
+      }
+
+      if (qtySisa > 0) {
+        // Stok tidak cukup → KEMBALIKAN qty_sisa YANG SUDAH DIKURANGI untuk item ini!
+        for (var k = 0; k < updateRows.length; k++) {
+          var rollbackBaris = updateRows[k].row;
+          var beforeQty = Number(penerimaanData[rollbackBaris - 1][4]);
+          sheetPenerimaan.getRange(rollbackBaris, 5).setValue(beforeQty + (qtyJual - qtySisa));
+        }
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          msg: "Stok tidak cukup untuk barang " + kodeBarang
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    // 3. Simpan ke Sheet Penjualan
+    for (var idx = 0; idx < data.items.length; idx++) {
+      var item = data.items[idx];
+      sheetPenjualan.appendRow([
+        data.invoice,                   // [0] Invoice
+        data.tglJual,                   // [1] Tanggal Jual
+        data.kasir,                     // [2] Kasir
+        data.pelanggan,                 // [3] Pelanggan
+        item.kode,                      // [4] Kode Barang
+        item.nama,                      // [5] Nama Barang
+        item.qty,                       // [6] QTY Jual
+        item.hargaJual,                 // [7] Harga Jual
+        item.diskon || 0,               // [8] Diskon
+        item.total || 0,                // [9] Subtotal
+        data.note || ""                 // [10] Catatan
+      ]);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({success: true, msg: "Transaksi berhasil!"}))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      msg: "Error: " + err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}

@@ -1,0 +1,69 @@
+const SHEET_ID = '1nQEruuZJWE1-gqE3gs1czGq2RLJYncE8C8';
+
+function doPost(e) {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName('Penerimaan');
+  var params = JSON.parse(e.postData.contents);
+
+  // Mapping qty_awal dan qty_sisa dari qty di form
+  var qty_awal = Number(params.qty);
+  var qty_sisa = qty_awal; // otomatis sama saat input pertama
+  var harga_beli = Number(params.hargaBeli);
+  var sub_total = qty_awal * harga_beli;
+
+  sheet.appendRow([
+    params.kode,
+    params.nama,
+    params.satuan,
+    qty_awal,
+    qty_sisa,
+    harga_beli,
+    Number(params.hargaJual),
+    params.tglDatang,
+    sub_total
+  ]);
+
+  return ContentService.createTextOutput(JSON.stringify({success:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+
+  // Delete support
+  if (e && e.parameter && e.parameter.delete == "1" && e.parameter.kode) {
+    var sheet = ss.getSheetByName('Penerimaan');
+    var data = sheet.getDataRange().getValues();
+    var found = false;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(e.parameter.kode)) {
+        sheet.deleteRow(i + 1);
+        found = true;
+        break;
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({success: found}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Ambil data dengan struktur baru
+  var sheetName = (e && e.parameter && e.parameter.sheet) ? e.parameter.sheet : "Penerimaan";
+  var sheet = ss.getSheetByName(sheetName);
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+for (var i = 1; i < data.length; i++) {
+  result.push({
+    kode: data[i][0],
+    nama: data[i][1],
+    satuan: data[i][2],
+    qty: data[i][3],
+    qtySisa: data[i][4],
+    hargaBeli: data[i][5],
+    hargaJual: data[i][6],
+    tglDatang: data[i][7],
+    subTotal: data[i][8] || (Number(data[i][3]) * Number(data[i][5]))
+  });
+}
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
