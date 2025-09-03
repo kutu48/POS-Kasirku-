@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Print Nota</title>
+  <meta name="viewport" content="width=400, initial-scale=1">
+  <script src="./js/jspdf.umd.min.js"></script>
+  <style>
+    @media print {
+      @page { size: 80mm auto; margin: 2mm; }
+      body { width: 80mm !important; margin:0; font-family:monospace; }
+      table { width: 100%; border-collapse: collapse; font-size: 11pt; }
+      th, td { padding: 2px 0; text-align: left; }
+      th { border-bottom: 1px solid #333; }
+      hr { border: 0; border-top: 1px dashed #999; margin: 4px 0; }
+      .totals td { font-weight: bold; }
+      .center { text-align: center; }
+      .no-print { display:none!important;}
+    }
+    body { width: 80mm; font-family:monospace; background: #fff; margin:0; }
+    .center { text-align: center; }
+    h2 { margin-bottom: 2px; margin-top:6px; font-size: 17px;}
+    table { font-size: 11.5px;}
+    .totals td { font-weight: bold; }
+    .btn-cetak {
+      display: inline-block; padding: 7px 18px; margin: 8px 0 10px 0;
+      font-size: 13px; border-radius: 5px; border: none; background: #26b161; color: #fff; cursor: pointer;
+    }
+    .btn-cetak:active { background: #209d53; }
+  </style>
+</head>
+<body id="notaBody">
+<div class="center no-print">
+  <button onclick="printNotaAndroid()" class="btn-cetak" style="background:#2196f3;margin-left:10px;">Cetak Nota</button>
+  <button onclick="bagikanNotaPDF()" class="btn-cetak" style="background:#2196f3;margin-left:10px;">Bagikan</button>
+</div>
+<script>
+function getData() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('data')) return null;
+  try {
+    return JSON.parse(decodeURIComponent(params.get('data')));
+  } catch {
+    return null;
+  }
+}
+
+function pad2(n) { return n<10?'0'+n:n }
+
+const nota = getData();
+
+if (!nota) {
+  document.body.innerHTML = '<div style="text-align:center;margin-top:40px;">Data Nota Tidak Ditemukan!</div>';
+} else {
+  // Jam sekarang
+  const now = new Date();
+  const jam = pad2(now.getHours())+':'+pad2(now.getMinutes());
+  // Isi HTML Nota
+  const namaToko = localStorage.getItem('namaToko') || 'KASIR KU';
+  let html = `
+    <div class="center"><h2>${namaToko}</h2></div>
+      <div>Invoice: ${nota.invoice}</div>
+      <div>Tgl: ${nota.tglJual} ${jam}</div>
+      <div>Kasir: ${nota.kasir}</div>
+      <div>Pelanggan: ${nota.pelanggan||'-'}</div>
+      <hr>
+      <table>
+        <tr><th>Item</th><th style="text-align:right">Harga</th><th style="text-align:right">Qty</th><th style="text-align:right">Total</th></tr>
+        ${nota.cart.map(item=>`<tr>
+          <td>${item.nama}</td>
+          <td style="text-align:right">${item.hargaJual}</td>
+          <td style="text-align:right">${item.qty}</td>
+          <td style="text-align:right">${item.qty*item.hargaJual}</td>
+        </tr>`).join('')}
+      </table>
+      <hr>
+      <table>
+        <tr class="totals">
+          <td colspan="3" style="text-align:right;padding-right:10px;">Grand Total</td>
+          <td style="text-align:right">${nota.grandTotal}</td>
+        </tr>
+        <tr class="totals">
+          <td colspan="3" style="text-align:right;padding-right:10px;">Tunai</td>
+          <td style="text-align:right">${nota.tunai}</td>
+        </tr>
+        <tr class="totals">
+          <td colspan="3" style="text-align:right;padding-right:10px;">Kembali</td>
+          <td style="text-align:right">${nota.tunai-nota.grandTotal}</td>
+        </tr>
+      </table>
+      <hr>
+      <div>Catatan: ${nota.note||'-'}</div>
+      <div class="center" style="margin-top:8px">--- Terima kasih ---</div>
+    `;
+  document.getElementById('notaBody').innerHTML += html;
+}
+
+// Fungsi membuat PDF dan membagikan ke WhatsApp (manual upload)
+function bagikanNotaPDF() {
+  if (!nota) return alert('Data nota tidak ditemukan!');
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: [80, 160] }); // 80mm nota thermal
+
+  const namaToko = localStorage.getItem('namaToko') || 'KASIR KU';
+  let y = 10;
+  doc.setFont("courier", "bold");
+  doc.setFontSize(15);
+  doc.text(namaToko, 40, y, {align:"center"}); y += 7;
+  doc.setFontSize(10);
+  doc.setFont("courier", "normal");
+  doc.text(`Invoice: ${nota.invoice}`, 8, y); y += 5;
+  doc.text(`Tgl: ${nota.tglJual}`, 8, y); y += 5;
+  doc.text(`Kasir: ${nota.kasir}`, 8, y); y += 5;
+  doc.text(`Pelanggan: ${nota.pelanggan||'-'}`, 8, y); y += 6;
+
+  doc.text("Item         Harga   Qty  Total", 8, y); y+=5;
+  nota.cart.forEach(item => {
+    const nama = (item.nama + "        ").slice(0,11);
+    const harga = String(item.hargaJual).padEnd(6,' ');
+    const qty = String(item.qty).padStart(2,' ');
+    const total = String(item.qty*item.hargaJual).padStart(7,' ');
+    doc.text(`${nama}${harga}${qty}${total}`, 8, y);
+    y += 5;
+  });
+  y += 3; doc.text("-------------------------------", 8, y); y += 5;
+  doc.text(`Grand Total:  ${nota.grandTotal}`, 8, y); y+=5;
+  doc.text(`Tunai:        ${nota.tunai}`, 8, y); y+=5;
+  doc.text(`Kembali:      ${nota.tunai-nota.grandTotal}`, 8, y); y+=6;
+  doc.text("Catatan:", 8, y); y+=4;
+  doc.text(`${nota.note||'-'}`, 8, y); y+=7;
+  doc.text("--- Terima kasih ---", 40, y, {align:"center"});
+
+  // Save PDF & instruksi ke user
+  doc.save("nota.pdf");
+  setTimeout(function() {
+    alert("PDF nota sudah didownload!\n\nBuka WhatsApp (Web/app), pilih kontak, klik 📎 (lampirkan), lalu pilih file PDF nota.");
+    window.open("https://wa.me/", "_blank");
+  }, 150);
+}
+
+function printNotaAndroid() {
+  if (window.AndroidPrint && window.AndroidPrint.printNota) {
+    window.AndroidPrint.printNota();
+  } else {
+    window.print();
+  }
+}
+</script>
+</body>
+</html>

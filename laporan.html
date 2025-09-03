@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Laporan Transaksi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="js/tailwindcss.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<!-- Loader -->
+<div id="loader" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white px-8 py-4 rounded shadow text-lg font-semibold flex items-center gap-3">
+    <svg class="animate-spin h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+    Loading...
+  </div>
+</div>
+<header class="w-full bg-blue-600 text-white text-center shadow-md py-5">
+  <h1 class="text-2xl md:text-3xl font-bold mb-1">KasirKu Dashboard</h1>
+  <p class="opacity-90 text-base">Sistem Kasir berbasis APP &amp; Spreadsheet</p>
+</header>
+  <nav class="w-full bg-white shadow flex items-center justify-between px-2 md:px-10 py-2 sticky top-0 z-50">
+  <div class="flex items-center gap-1 md:gap-4">
+    <a href="index.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-2 py-1 md:py-0 font-medium transition group">
+      <svg class="w-6 h-6 mb-1 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+        <path d="M3 12l9-9 9 9" />
+        <path d="M9 21V9h6v12" />
+      </svg>
+      <span class="text-xs md:text-[15px]">Home</span>
+    </a>
+    <a href="penerimaan.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-2 py-1 md:py-0 font-medium transition group">
+      <svg class="w-6 h-6 mb-1 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+        <path d="M12 3v12" />
+        <path d="M12 15l-4-4" />
+        <path d="M12 15l4-4" />
+        <rect x="3" y="17" width="18" height="4" rx="2"/>
+      </svg>
+      <span class="text-xs md:text-[15px]">Penerimaan</span>
+    </a>
+    <a href="pengeluaran.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-2 py-1 md:py-0 font-medium transition group">
+      <svg class="w-6 h-6 mb-1 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+        <path d="M12 21V9" />
+        <path d="M12 9l4 4" />
+        <path d="M12 9l-4 4" />
+        <rect x="3" y="3" width="18" height="4" rx="2"/>
+      </svg>
+      <span class="text-xs md:text-[15px]">Pengeluaran</span>
+    </a>
+    <a href="laporan.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-2 py-1 md:py-0 font-medium transition group">
+      <svg class="w-6 h-6 mb-1 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+        <path d="M3 3v18h18" />
+        <rect x="7" y="12" width="2" height="6"/>
+        <rect x="11" y="8" width="2" height="10"/>
+        <rect x="15" y="5" width="2" height="13"/>
+      </svg>
+      <span class="text-xs md:text-[15px]">Laporan Transaksi</span>
+    </a>
+    <a href="stok.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-2 py-1 md:py-0 font-medium transition group">
+      <svg class="w-6 h-6 mb-1 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+        <polygon points="12 2 22 7 12 12 2 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+      <span class="text-xs md:text-[15px]">Laporan Stok</span>
+    </a>
+  </div>
+</nav>
+<main class="max-w-6xl mx-auto mt-6 mb-10">
+  <h2 class="text-xl md:text-2xl font-bold text-blue-700 mb-5">Laporan Transaksi</h2>
+
+  <!-- FILTER -->
+  <section class="flex flex-wrap items-center gap-x-6 gap-y-3 bg-white p-4 rounded-xl shadow mb-6">
+    <label class="font-semibold">Jenis:</label>
+    <select id="jenisTransaksi" class="border rounded px-2 py-1">
+      <option value="penjualan">Penjualan</option>
+      <option value="pembelian">Pembelian</option>
+    </select>
+    <label class="font-semibold ml-4">Periode:</label>
+    <select id="filterPeriode" class="border rounded px-2 py-1">
+      <option value="harian">Harian</option>
+      <option value="mingguan">Mingguan</option>
+      <option value="bulanan">Bulanan</option>
+      <option value="custom">Custom</option>
+    </select>
+    <input id="filterTanggal" type="date" class="border rounded px-2 py-1 hidden">
+    <input id="filterTanggalMulai" type="date" class="border rounded px-2 py-1 hidden">
+    <input id="filterTanggalAkhir" type="date" class="border rounded px-2 py-1 hidden">
+    <button id="tampilLaporan" class="bg-blue-600 hover:bg-blue-800 text-white font-bold px-5 py-2 rounded shadow ml-4">Tampilkan</button>
+  </section>
+
+  <!-- STATISTIK PENJUALAN -->
+  <section id="statPenjualan" class="mb-6 hidden">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="bg-blue-50 p-4 rounded-2xl flex flex-col shadow">
+        <span class="text-xs text-gray-500 mb-1">Total Transaksi</span>
+        <span class="font-bold text-2xl text-blue-700" id="statTotalTransaksi">0</span>
+      </div>
+      <div class="bg-blue-50 p-4 rounded-2xl flex flex-col shadow">
+        <span class="text-xs text-gray-500 mb-1">Total Qty Terjual</span>
+        <span class="font-bold text-2xl text-blue-700" id="statTotalQty">0</span>
+      </div>
+      <div class="bg-blue-50 p-4 rounded-2xl flex flex-col shadow">
+        <span class="text-xs text-gray-500 mb-1">Omzet Penjualan</span>
+        <span class="font-bold text-2xl text-green-600" id="statOmzet">Rp0</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+      <div class="bg-blue-50 p-4 rounded-2xl flex flex-col shadow">
+        <span class="text-xs text-gray-500 mb-1">Rata-rata Qty per Transaksi</span>
+        <span class="font-bold text-xl text-blue-700" id="statRataQty">0</span>
+      </div>
+      <div class="bg-blue-50 p-4 rounded-2xl flex flex-col col-span-2 shadow">
+        <span class="text-xs text-gray-500 mb-1">Produk Terlaris</span>
+        <span class="font-bold text-lg text-blue-700" id="statProdukTerlaku">-</span>
+      </div>
+    </div>
+    <div class="bg-blue-50 mt-4 p-3 rounded-2xl shadow">
+      <span class="text-xs text-gray-500">Top Penjualan Harian/Mingguan/Bulanan:</span>
+      <div id="statPeriodeTop" class="font-mono mt-1 text-[13px]"></div>
+    </div>
+  </section>
+
+  <!-- TABEL LAPORAN -->
+  <section class="bg-white rounded-2xl shadow p-4 overflow-x-auto">
+    <table class="min-w-full text-sm border rounded-xl overflow-hidden shadow divide-y divide-blue-100">
+      <thead id="laporanThead" class="bg-blue-600 text-white"></thead>
+      <tbody id="laporanTable"></tbody>
+    </table>
+    <div id="grandTotalRow" class="text-right font-bold mt-3"></div>
+  </section>
+</main>
+<script>
+// --- Loader ---
+function showLoading(msg) {
+  const loader = document.getElementById('loader');
+  if (loader) loader.querySelector('div').lastChild.textContent = msg || "Loading...";
+  loader.classList.remove('hidden');
+}
+function hideLoading() {
+  document.getElementById('loader').classList.add('hidden');
+}
+
+// URL API
+const apiLaporanPenjualan = "https://opensheet.elk.sh/1qOzg1n30vBfwmw1_/Penjualan";
+const apiLaporanPembelian = "https://opensheet.elk.sh/1qOzg1n30vBfwmw1_/Penerimaan";
+
+// Filter Periode Dynamic UI
+const filterPeriode = document.getElementById('filterPeriode');
+const filterTanggal = document.getElementById('filterTanggal');
+const filterTanggalMulai = document.getElementById('filterTanggalMulai');
+const filterTanggalAkhir = document.getElementById('filterTanggalAkhir');
+filterPeriode.onchange = function() {
+  filterTanggal.classList.add('hidden');
+  filterTanggalMulai.classList.add('hidden');
+  filterTanggalAkhir.classList.add('hidden');
+  if (this.value === "harian") {
+    filterTanggal.classList.remove('hidden');
+  }
+  if (this.value === "mingguan" || this.value === "bulanan" || this.value === "custom") {
+    filterTanggalMulai.classList.remove('hidden');
+    filterTanggalAkhir.classList.remove('hidden');
+  }
+};
+
+// Tampilkan laporan
+document.getElementById('tampilLaporan').onclick = async function() {
+  showLoading("Mengambil data laporan...");
+  const jenis = document.getElementById('jenisTransaksi').value;
+  const periode = filterPeriode.value;
+  let tanggal = filterTanggal.value;
+  let mulai = filterTanggalMulai.value;
+  let akhir = filterTanggalAkhir.value;
+
+  // Pilih API sesuai jenis transaksi
+  let url = jenis === "penjualan" ? apiLaporanPenjualan : apiLaporanPembelian;
+  try {
+    const res = await fetch(url);
+    let data = await res.json();
+
+    // --- Filter data sesuai periode yang dipilih
+    if (periode === "harian") {
+      // Untuk Penjualan: fieldnya DATE, untuk Pembelian: tanggal masuk
+      data = data.filter(row => {
+        let tgl = (jenis === "penjualan")
+            ? (row.DATE || row['tanggal'] || "")
+            : (row['tanggal masuk'] || row['TGL MASUK'] || row.tglDatang || "");
+        // Format tgl yyyy-mm-dd
+        tgl = (tgl || "").slice(0,10);
+        return tgl === tanggal;
+      });
+    }
+    if (periode === "mingguan" || periode === "bulanan" || periode === "custom") {
+      // Filter antara mulai - akhir
+      data = data.filter(row => {
+        let tgl = (jenis === "penjualan")
+            ? (row.DATE || row['tanggal'] || "")
+            : (row['tanggal masuk'] || row['TGL MASUK'] || row.tglDatang || "");
+        tgl = (tgl || "").slice(0,10);
+        return (!mulai || tgl >= mulai) && (!akhir || tgl <= akhir);
+      });
+    }
+    renderLaporan(data);
+  } catch (e) {
+    renderLaporan([]);
+  }
+  hideLoading();
+};
+
+// Format tanggal yyyy-mm-dd
+function formatDate(tgl) {
+  if (!tgl) return "-";
+  if (tgl.includes("T")) return tgl.split("T")[0];
+  if (tgl.includes("/")) {
+    // Jika format dd/mm/yyyy, convert ke yyyy-mm-dd
+    const [d, m, y] = tgl.split("/");
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  return tgl;
+}
+// Format Rupiah
+function formatRupiah(num) {
+  return "Rp" + Number(num || 0).toLocaleString("id-ID");
+}
+
+// ---- Render Table ----
+function renderLaporan(data) {
+  const jenis = document.getElementById('jenisTransaksi').value;
+  const tb = document.getElementById('laporanTable');
+  let html = "";
+  let grandTotal = 0;
+
+  // ==== Penjualan ====
+  if (jenis === "penjualan") {
+    html += `
+      <tr>
+        <th>INVOICE</th>
+        <th>DATE</th>
+        <th>KASIR</th>
+        <th>PELANGGAN</th>
+        <th>KODE BARANG</th>
+        <th>NAMA BARANG</th>
+        <th>QTY</th>
+        <th>HARGA SATUAN</th>
+        <th>SUB TOTAL</th>
+        <th>CATATAN</th>
+      </tr>
+    `;
+
+    // ======= Statistik Terlaris =======
+    // Hitung penjualan per produk
+    const statProduk = {};
+    let totalTransaksi = 0, totalQty = 0, omzet = 0;
+    if (data && data.length > 0) {
+      data.forEach(row => {
+        // Parsing data
+        const nama = row['NAMA BARANG'] || row.nama || '-';
+        const kode = row['KODE BARANG'] || row.kode || '-';
+        const qty = Number(row.QTY || row.qty || 0);
+        const harga = Number(row['HARGA SATUAN'] || row.harga || row.hargaJual || 0);
+        const subTotal = Number(row['SUB TOTAL'] || row.subTotal || row.subtotal || row.total || (qty * harga));
+
+        // Akumulasi statistik produk
+        if (!statProduk[kode]) {
+          statProduk[kode] = {
+            nama,
+            kode,
+            totalQty: 0,
+            omzet: 0
+          };
+        }
+        statProduk[kode].totalQty += qty;
+        statProduk[kode].omzet += subTotal;
+
+        totalQty += qty;
+        omzet += subTotal;
+        totalTransaksi++;
+      });
+    }
+
+    // Urutkan produk terlaris
+    const produkArray = Object.values(statProduk).sort((a, b) => b.totalQty - a.totalQty);
+    // Tampilkan di statistik
+    document.getElementById('statPenjualan').classList.remove('hidden');
+    document.getElementById('statTotalTransaksi').textContent = totalTransaksi;
+    document.getElementById('statTotalQty').textContent = totalQty;
+    document.getElementById('statOmzet').textContent = formatRupiah(omzet);
+    document.getElementById('statRataQty').textContent = totalTransaksi ? (totalQty / totalTransaksi).toFixed(2) : 0;
+    document.getElementById('statProdukTerlaku').textContent = produkArray.length
+      ? produkArray.slice(0, 3).map(x => x.nama + ' (' + x.totalQty + ')').join(', ')
+      : '-';
+
+    // Tabel top produk terlaris (limit 5)
+    let statPeriodeTop = `<table class="min-w-full text-xs"><thead><tr class="bg-blue-100">
+      <th class="p-1">Produk</th><th class="p-1">Kode</th><th class="p-1">Qty</th><th class="p-1">Omzet</th></tr></thead><tbody>`;
+    produkArray.slice(0, 5).forEach(p => {
+      statPeriodeTop += `<tr class="even:bg-blue-50/60">
+        <td class="p-1">${p.nama}</td>
+        <td class="p-1">${p.kode}</td>
+        <td class="p-1 text-right">${p.totalQty}</td>
+        <td class="p-1 text-right">${formatRupiah(p.omzet)}</td>
+      </tr>`;
+    });
+    statPeriodeTop += "</tbody></table>";
+    document.getElementById('statPeriodeTop').innerHTML = statPeriodeTop;
+
+    // ==== Isi Tabel Transaksi ====
+    if (!data || data.length === 0) {
+      html += `<tr><td colspan="10" class="text-center text-gray-400 py-5">Tidak ada data...</td></tr>`;
+    } else {
+      data.forEach((row, i) => {
+        const qty = Number(row.QTY || row.qty || 0);
+        const harga = Number(row['HARGA SATUAN'] || row.harga || row.hargaJual || 0);
+        let subTotal = Number(
+          row['SUB TOTAL'] || row.subTotal || row.subtotal || row.total || (qty * harga)
+        );
+        grandTotal += subTotal;
+        html += `<tr class="even:bg-blue-50/60 hover:bg-blue-100">
+          <td>${row.INVOICE || row.invoice || '-'}</td>
+          <td>${formatDate(row.DATE || row.tgl || row.tglJual)}</td>
+          <td>${row.KASIR || row.kasir || '-'}</td>
+          <td>${row.PELANGGAN || row.pelanggan || '-'}</td>
+          <td>${row['KODE BARANG'] || row.kode || '-'}</td>
+          <td>${row['NAMA BARANG'] || row.nama || '-'}</td>
+          <td class="text-right">${qty}</td>
+          <td class="text-right">${formatRupiah(harga)}</td>
+          <td class="text-right">${formatRupiah(subTotal)}</td>
+          <td>${row.CATATAN || row.catatan || row.note || '-'}</td>
+        </tr>`;
+      });
+      html += `<tr class="font-bold bg-blue-100">
+        <td colspan="8" style="text-align:right;">Grand Total:</td>
+        <td>${formatRupiah(grandTotal)}</td>
+        <td></td>
+      </tr>`;
+    }
+
+  // ======= Pembelian / Penerimaan =======
+  } else {
+    // Sembunyikan statistik penjualan
+    document.getElementById('statPenjualan').classList.add('hidden');
+    html += `
+      <tr>
+        <th>TGL MASUK</th>
+        <th>KODE BARANG</th>
+        <th>NAMA BARANG</th>
+        <th>SATUAN</th>
+        <th>QTY</th>
+        <th>HARGA BELI</th>
+        <th>HARGA JUAL</th>
+        <th>SUB TOTAL</th>
+      </tr>
+    `;
+    if (!data || data.length === 0) {
+      html += `<tr><td colspan="8" class="text-center text-gray-400 py-5">Tidak ada data...</td></tr>`;
+    } else {
+      data.forEach((row, i) => {
+        // QTY gunakan qty awal!
+        const qty = Number(
+          row['qty awal'] || row['QTY AWAL'] || row.qty_awal || row.qty || row.QTY || 0
+        );
+        const hargaBeli = Number(
+          row['harga beli'] || row.hargaBeli || row['HARGA BELI'] || row.harga_beli || 0
+        );
+        let subTotal = Number(
+          row['sub total'] || row.subtotal || row['SUB TOTAL'] || row.subTotal || (qty * hargaBeli)
+        );
+        grandTotal += subTotal;
+        html += `<tr class="even:bg-blue-50/60 hover:bg-blue-100">
+          <td>${formatDate(row.tglDatang || row['TGL MASUK'] || row['tanggal masuk'])}</td>
+          <td>${row['Kode Barang'] || row.kode || row['KODE BARANG'] || '-'}</td>
+          <td>${row['Nama Barang'] || row.nama || row['NAMA BARANG'] || '-'}</td>
+          <td>${row['Satuan '] || row['Satuan'] || row.satuan || row['SATUAN'] || '-'}</td>
+          <td class="text-right">${qty}</td>
+          <td class="text-right">${formatRupiah(
+            row['harga beli'] || row.hargaBeli || row['HARGA BELI'] || 0
+          )}</td>
+          <td class="text-right">${formatRupiah(
+            row['harga jual'] || row.hargaJual || row['HARGA JUAL'] || 0
+          )}</td>
+          <td class="text-right">${formatRupiah(subTotal)}</td>
+        </tr>`;
+      });
+      html += `<tr class="font-bold bg-blue-100">
+        <td colspan="7" style="text-align:right;">Grand Total:</td>
+        <td>${formatRupiah(grandTotal)}</td>
+      </tr>`;
+    }
+  }
+  tb.innerHTML = html;
+}
+
+</script>
+</body>
+</html>

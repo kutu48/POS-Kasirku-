@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Master Data Barang</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="./js/tailwindcss.js"></script>
+  <!-- Barcode scanner library -->
+  <script src="js/html5-qrcode.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<!-- Loader Modal -->
+<div id="loader" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white px-8 py-4 rounded shadow text-lg font-semibold flex items-center gap-3">
+    <svg class="animate-spin h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+    <span id="loaderText">Loading...</span>
+  </div>
+</div>
+<header class="w-full bg-blue-600 text-white text-center shadow-md py-5">
+  <h1 class="text-2xl md:text-3xl font-bold mb-1">KasirKu Dashboard</h1>
+  <p class="opacity-90 text-base">Sistem Kasir berbasis APP &amp; Spreadsheet</p>
+</header>
+<!-- Navbar Tailwind Responsive & Overflow -->
+<nav class="w-full bg-white shadow px-1 md:px-6 py-1 sticky top-0 z-50">
+  <div class="flex items-center gap-0.5 md:gap-2 overflow-x-auto flex-nowrap max-w-full">
+    <a href="index.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M3 12l9-9 9 9" />
+        <path d="M9 21V9h6v12" />
+      </svg>
+      <span class="text-[11px] md:text-xs">Home</span>
+    </a>
+    <a href="penerimaan.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M12 3v12" />
+        <path d="M12 15l-4-4" />
+        <path d="M12 15l4-4" />
+        <rect x="3" y="17" width="18" height="4" rx="2"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Terima</span>
+    </a>
+    <a href="pengeluaran.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M12 21V9" />
+        <path d="M12 9l4 4" />
+        <path d="M12 9l-4 4" />
+        <rect x="3" y="3" width="18" height="4" rx="2"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Keluar</span>
+    </a>
+    <a href="laporan.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M3 3v18h18" />
+        <rect x="7" y="12" width="2" height="6"/>
+        <rect x="11" y="8" width="2" height="10"/>
+        <rect x="15" y="5" width="2" height="13"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Laporan</span>
+    </a>
+    <a href="stok.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <polygon points="12 2 22 7 12 12 2 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Stok</span>
+    </a>
+    <!-- Tombol Sync -->
+    <button id="btnSyncBarang"
+      class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group bg-transparent border-none cursor-pointer"
+      title="Sync Data" type="button">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M4 4v6h6"></path>
+        <path d="M20 20v-6h-6"></path>
+        <path d="M5 19A9 9 0 0 1 19 5"></path>
+      </svg>
+      <span class="text-[11px] md:text-xs">Sync</span>
+    </button>
+  </div>
+</nav>
+<script>
+function showLoading(msg) {
+  const loader = document.getElementById('loader');
+  document.getElementById('loaderText').textContent = msg || "Loading...";
+  loader.classList.remove('hidden');
+}
+function hideLoading() {
+  document.getElementById('loader').classList.add('hidden');
+}
+
+// Hamburger Dropdown (show/hide on mobile)
+const menuBtn = document.getElementById('menuDropdownBtn');
+const dropdown = document.getElementById('dropdownMenu');
+if(menuBtn) {
+  document.addEventListener('click', function(e) {
+    if (menuBtn.contains(e.target)) {
+      dropdown.classList.toggle('hidden');
+    } else if (!dropdown.contains(e.target)) {
+      dropdown.classList.add('hidden');
+    }
+  });
+}
+</script>
+<!-- Toast Notification -->
+<div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-8 min-w-[200px] max-w-[80vw] z-[9999] px-5 py-3 rounded-xl shadow-xl font-semibold text-white bg-green-600 opacity-0 pointer-events-none transition-all duration-300"></div>
+<div class="max-w-md w-full mx-auto mt-8 bg-white shadow-md rounded-2xl p-6 mb-10">
+  <h2 class="text-xl font-bold text-blue-700 text-center mb-3">Master Data Barang</h2>
+  <form id="formBarang" class="flex flex-col gap-3 mb-6">
+    <div class="flex items-center gap-2">
+      <input type="text" id="kode" class="flex-1 border border-gray-300 rounded-lg px-3 py-2" placeholder="Kode Barang" required autocomplete="off">
+      <button type="button" class="flex items-center gap-1 px-3 py-2 rounded-md bg-blue-600 text-white font-semibold text-sm hover:bg-blue-800" id="scanBarcode">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="4" height="4"/><rect x="17" y="3" width="4" height="4"/><rect x="17" y="17" width="4" height="4"/><rect x="3" y="17" width="4" height="4"/><path d="M7 12h10"/>
+        </svg>
+        Scan
+      </button>
+    </div>
+    <input type="text" id="nama" class="border border-gray-300 rounded-lg px-3 py-2" placeholder="Nama Barang" required autocomplete="off">
+    <input type="text" id="satuan" class="border border-gray-300 rounded-lg px-3 py-2" placeholder="Satuan" required autocomplete="off">
+    <label for="gambar" class="text-sm font-medium mt-1">Gambar:</label>
+    <input type="file" id="gambar" accept="image/*" class="file:border file:border-gray-300 file:rounded-lg">
+    <img id="preview-gambar" src="#" alt="Preview Gambar" class="mt-2 rounded-md shadow max-w-[70px] max-h-[70px] hidden"/>
+    <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 rounded-lg mt-2 shadow">Tambah Barang</button>
+  </form>
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-200 text-sm">
+      <thead>
+        <tr class="bg-blue-50 text-blue-700">
+          <th class="py-2 px-3 border-b">Kode</th>
+          <th class="py-2 px-3 border-b">Nama</th>
+          <th class="py-2 px-3 border-b">Satuan</th>
+          <th class="py-2 px-3 border-b">Gambar</th>
+		  <th class="py-2 px-3 border-b">Cetak QR</th>
+        </tr>
+      </thead>
+      <tbody id="tabelBarang">
+        <!-- Data barang tampil di sini -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Barcode Scanner -->
+<div id="scanModal" class="fixed inset-0 z-50 bg-black bg-opacity-60 hidden flex items-center justify-center">
+  <div class="bg-white rounded-xl p-4 shadow max-w-sm w-full relative">
+  <button id="toggleFlash" type="button"
+  class="absolute top-2 left-2 text-yellow-500 bg-yellow-100 px-2 py-1 rounded shadow font-bold hover:bg-yellow-300 hidden">
+  🔦 Flash
+</button>
+    <button onclick="tutupScan()" class="absolute top-2 right-2 text-gray-500 hover:text-red-500">&times;</button>
+    <h3 class="text-lg font-bold text-blue-700 mb-3">Scan Barcode</h3>
+    <div id="reader" class="mx-auto"></div>
+    <div id="scanStatus" class="text-center text-xs text-gray-400 mt-2"></div>
+  </div>
+</div>
+
+<script>
+// Di bawah script
+document.getElementById('btnSyncBarang').onclick = async function() {
+  if(!confirm('Yakin ingin memperbarui data produk dari server?')) return;
+  showLoading('Sync data produk...');
+  localStorage.removeItem('dataBarangPenjualan');
+  await loadBarang();
+  hideLoading();
+  alert('Data produk sudah diperbarui!');
+};
+
+const apiURL = "https://script.google.com/macros/s/AKfycbwnybCYTWvoJvugHz9ywLF217Gy/exec";
+
+// Fungsi Toast
+function showToast(msg, type = "success") {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = "fixed left-1/2 -translate-x-1/2 bottom-8 min-w-[200px] max-w-[80vw] z-[9999] px-5 py-3 rounded-xl shadow-xl font-semibold text-white opacity-0 pointer-events-none transition-all duration-300";
+  if(type === "error") toast.style.background = "#ef4444"; // Merah
+  else toast.style.background = "#16a34a"; // Hijau
+  setTimeout(() => {
+    toast.style.opacity = 1;
+    toast.style.pointerEvents = "auto";
+  }, 10);
+  setTimeout(() => {
+    toast.style.opacity = 0;
+    toast.style.pointerEvents = "none";
+  }, 2600);
+}
+
+// Preview gambar sebelum upload + limit max 1MB
+let gambarBase64 = "";
+let gambarName = "";
+document.getElementById('gambar').onchange = function(evt) {
+  const [file] = this.files;
+  gambarName = file ? file.name : "";
+  const maxSize = 1 * 1024 * 1024; // 1 MB
+
+  // Validasi ukuran file (maksimal 1MB)
+  if (file && file.size > maxSize) {
+    showToast("Ukuran gambar terlalu besar! Maksimal 1 MB.", "error");
+    this.value = ""; // Reset input file
+    document.getElementById('preview-gambar').classList.add('hidden');
+    gambarBase64 = "";
+    gambarName = "";
+    return;
+  }
+
+  // Jika tidak ada file, sembunyikan preview
+  if (!file) {
+    document.getElementById('preview-gambar').classList.add('hidden');
+    gambarBase64 = "";
+    gambarName = "";
+    return;
+  }
+
+  // Convert ke base64 & preview
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    gambarBase64 = e.target.result;
+    const prev = document.getElementById('preview-gambar');
+    prev.src = gambarBase64;
+    prev.classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+};
+
+// Notifikasi suara saat scan berhasil
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = 1046; // Nada tinggi C6
+    o.connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.16);
+    setTimeout(()=>ctx.close(), 300);
+  } catch (e) {}
+}
+
+// Barcode scan modal logic
+let scanner = null;
+let isFlashOn = false;
+
+// Fungsi buka scan barcode
+document.getElementById('scanBarcode').onclick = function() {
+  document.getElementById('scanModal').classList.remove('hidden');
+  document.getElementById('scanStatus').textContent = "Arahkan barcode ke kamera";
+  document.getElementById('toggleFlash').classList.add('hidden');
+  isFlashOn = false;
+  // Reset tombol flash
+  const btnFlash = document.getElementById('toggleFlash');
+  btnFlash.textContent = "🔦 Flash";
+  btnFlash.classList.remove('bg-yellow-300');
+  btnFlash.classList.add('bg-yellow-100');
+
+  if (!scanner) {
+    scanner = new Html5Qrcode("reader");
+  }
+
+  scanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: function(viewfinderWidth, viewfinderHeight) {
+        let size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.9);
+        return { width: size, height: size };
+      }
+    },
+    (decodedText, decodedResult) => {
+      document.getElementById('kode').value = decodedText;
+      playBeep();
+      document.getElementById('scanStatus').textContent = "Barcode terdeteksi!";
+      setTimeout(() => {
+        tutupScan();
+        setTimeout(() => {
+          document.getElementById('nama').focus();
+        }, 400);
+      }, 350);
+    },
+    (errorMessage) => {
+      // Optional: tampilkan error scanning jika perlu
+    }
+  ).then(() => {
+    setTimeout(() => {
+      let track = scanner.getRunningTrack && scanner.getRunningTrack();
+      if (track && typeof track.getCapabilities === "function") {
+        const caps = track.getCapabilities();
+        if (caps.torch) {
+          document.getElementById('toggleFlash').classList.remove('hidden');
+        }
+      }
+    }, 300);
+  }).catch(err => {
+    document.getElementById('scanStatus').textContent = "Tidak bisa akses kamera!";
+  });
+};
+
+// Toggle flash/torch
+document.getElementById('toggleFlash').onclick = function() {
+  if (!scanner) return;
+  const track = scanner.getRunningTrack && scanner.getRunningTrack();
+  if (track && typeof track.applyConstraints === "function") {
+    isFlashOn = !isFlashOn;
+    track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+    this.textContent = isFlashOn ? "🔦 Flash ON" : "🔦 Flash";
+    this.classList.toggle('bg-yellow-300', isFlashOn);
+    this.classList.toggle('bg-yellow-100', !isFlashOn);
+  }
+};
+
+// Tutup modal scan + matikan kamera & flash
+function tutupScan() {
+  document.getElementById('scanModal').classList.add('hidden');
+  if (scanner) {
+    // Matikan flash sebelum stop (supaya kamera benar2 mati)
+    const track = scanner.getRunningTrack && scanner.getRunningTrack();
+    if (track && typeof track.applyConstraints === "function") {
+      track.applyConstraints({ advanced: [{ torch: false }] });
+    }
+    scanner.stop().then(() => {
+      document.getElementById('reader').innerHTML = "";
+      scanner = null; // PATCH: reset scanner agar fresh setiap open!
+    }).catch(() => {
+      scanner = null; // PATCH: reset tetap walau error
+    });
+  }
+  isFlashOn = false;
+  // Reset UI tombol flash
+  var btnFlash = document.getElementById('toggleFlash');
+  if(btnFlash) {
+    btnFlash.textContent = "🔦 Flash";
+    btnFlash.classList.remove('bg-yellow-300');
+    btnFlash.classList.add('bg-yellow-100');
+    btnFlash.classList.add('hidden');
+  }
+}
+
+
+// Submit form tambah barang
+document.getElementById('formBarang').onsubmit = async function(e) {
+  e.preventDefault();
+  const kode = document.getElementById('kode').value.trim();
+  const nama = document.getElementById('nama').value.trim();
+  const satuan = document.getElementById('satuan').value.trim();
+
+  const body = {
+    kode, nama, satuan,
+    gambarBase64,
+    gambarName
+  };
+
+  showLoading("Menyimpan data...");
+  try {
+    const res = await fetch(apiURL, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }).then(r => r.json());
+
+        if (res.success) {
+      showToast('Berhasil tambah barang!', 'success');
+      this.reset();
+      gambarBase64 = "";
+      gambarName = "";
+      document.getElementById('preview-gambar').classList.add('hidden');
+      await tampilkanBarang();
+    } else {
+      showToast('Gagal tambah barang', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal tambah barang', 'error');
+  }
+  hideLoading();
+};
+
+
+function cetakQR(kode, nama) {
+  // Encode untuk URL (biar aman spasi/simbol)
+  window.open(`cetak-qr.html?kode=${encodeURIComponent(kode)}&nama=${encodeURIComponent(nama)}`, '_blank');
+}
+
+
+// Helper: ambil data dari localStorage, fetch ke API kalau tidak ada
+async function getMasterBarang() {
+  let cache = localStorage.getItem('masterBarang');
+  if (cache) {
+    try {
+      return JSON.parse(cache);
+    } catch (e) {
+      localStorage.removeItem('masterBarang');
+    }
+  }
+  // Ambil dari API, cache ulang
+  const res = await fetch(apiURL);
+  const data = await res.json();
+  localStorage.setItem('masterBarang', JSON.stringify(data));
+  return data;
+}
+
+// Update tampilkanBarang() agar pakai cache
+async function tampilkanBarang() {
+  showLoading("Mengambil data master...");
+  try {
+    const data = await getMasterBarang();
+    const tabel = document.getElementById('tabelBarang');
+    tabel.innerHTML = "";
+    data.forEach(row => {
+      let imgHtml = "";
+      if (row.fileId) {
+        imgHtml = `<img src="https://drive.google.com/thumbnail?id=${row.fileId}" alt="Inspection Image" class="max-w-[38px] max-h-[38px] rounded">`;
+      }
+      tabel.innerHTML += `<tr>
+  <td class="border-b py-2 px-2">${row.kode}</td>
+  <td class="border-b py-2 px-2">${row.nama}</td>
+  <td class="border-b py-2 px-2">${row.satuan}</td>
+  <td class="border-b py-2 px-2">${imgHtml}</td>
+  <td class="border-b py-2 px-2">
+    <button class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-800"
+      onclick="cetakQR('${row.kode}', '${row.nama}')">Cetak QR</button>
+  </td>
+</tr>`;
+    });
+  } catch (e) {
+    showToast('Gagal mengambil data barang', 'error');
+  }
+  hideLoading();
+}
+
+// Saat TAMBAH barang: hapus cache, fetch ulang
+document.getElementById('formBarang').onsubmit = async function(e) {
+  e.preventDefault();
+  const kode = document.getElementById('kode').value.trim();
+  const nama = document.getElementById('nama').value.trim();
+  const satuan = document.getElementById('satuan').value.trim();
+
+  const body = {
+    kode, nama, satuan,
+    gambarBase64,
+    gambarName
+  };
+
+  showLoading("Menyimpan data...");
+  try {
+    const res = await fetch(apiURL, {
+      method: "POST",
+      body: JSON.stringify(body)
+    }).then(r => r.json());
+
+    if (res.success) {
+      showToast('Berhasil tambah barang!', 'success');
+      this.reset();
+      gambarBase64 = "";
+      gambarName = "";
+      document.getElementById('preview-gambar').classList.add('hidden');
+      // Hapus cache master & fetch ulang
+      localStorage.removeItem('masterBarang');
+      await tampilkanBarang();
+    } else {
+      showToast('Gagal tambah barang', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal tambah barang', 'error');
+  }
+  hideLoading();
+};
+
+tampilkanBarang(); // Panggil saat halaman dibuka
+</script>
+</body>
+</html>

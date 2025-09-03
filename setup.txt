@@ -1,0 +1,17 @@
+Langkah installasinya
+
+Buat spreadsheet dengan Sheet Name
+MasterData dengan struktur > Kode Barang | Nama Barang | Satuan | FileId
+Penerimaan dengan struktur > Kode Barang | Nama Barang | Satuan | qty awal | qty sisa | harga beli | harga jual | tanggal masuk | sub total
+Penjualan dengan struktur > INVOICE | DATE | KASIR | Pelanggan | KODE BARANG | NAMA BARANG | QTY | HARGA SATUAN | DISKON | SUB TOTAL | CATATAN
+login dengan struktur > username | password | nama | level
+
+Ubah akses share ke Akses umum Siapa saja yang memiliki Link
+ubah semua https://opensheet.elk.sh/ ada di stok, laporan
+Format 
+const API_STOK = "https://opensheet.elk.sh/spreadsheetid/Penerimaan";
+
+Installasi Appscript dan deploy untuk masing masing appscript
+login & masterdata > Masterdata.html & Login.html
+Pos Pengeluaran > pengeluaran.html
+pos penerimaan > Penerimaan.html

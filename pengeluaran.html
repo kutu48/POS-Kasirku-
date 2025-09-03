@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Transaksi Penjualan (Kasir)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="./js/tailwindcss.js"></script>
+  <script src="./js/html5-qrcode.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="loader" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white px-8 py-4 rounded shadow text-lg font-semibold flex items-center gap-3">
+    <svg class="animate-spin h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+    Loading...
+  </div>
+</div>
+  <header class="w-full bg-blue-600 text-white text-center shadow-md py-5">
+    <h1 class="text-2xl md:text-3xl font-bold mb-1">KasirKu Dashboard</h1>
+    <p class="opacity-90 text-base">Sistem Kasir berbasis APP &amp; Spreadsheet</p>
+  </header>
+<!-- Navbar Tailwind Responsive & Overflow -->
+<nav class="w-full bg-white shadow px-1 md:px-6 py-1 sticky top-0 z-50">
+  <div class="flex items-center gap-0.5 md:gap-2 overflow-x-auto flex-nowrap max-w-full">
+    <a href="index.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M3 12l9-9 9 9" />
+        <path d="M9 21V9h6v12" />
+      </svg>
+      <span class="text-[11px] md:text-xs">Home</span>
+    </a>
+    <a href="penerimaan.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M12 3v12" />
+        <path d="M12 15l-4-4" />
+        <path d="M12 15l4-4" />
+        <rect x="3" y="17" width="18" height="4" rx="2"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Terima</span>
+    </a>
+    <a href="pengeluaran.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M12 21V9" />
+        <path d="M12 9l4 4" />
+        <path d="M12 9l-4 4" />
+        <rect x="3" y="3" width="18" height="4" rx="2"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Keluar</span>
+    </a>
+    <a href="laporan.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M3 3v18h18" />
+        <rect x="7" y="12" width="2" height="6"/>
+        <rect x="11" y="8" width="2" height="10"/>
+        <rect x="15" y="5" width="2" height="13"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Laporan</span>
+    </a>
+    <a href="stok.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <polygon points="12 2 22 7 12 12 2 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Stok</span>
+    </a>
+    <!-- Tombol Sync -->
+    <button id="btnSyncBarang"
+      class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group bg-transparent border-none cursor-pointer"
+      title="Sync Data" type="button">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M4 4v6h6"></path>
+        <path d="M20 20v-6h-6"></path>
+        <path d="M5 19A9 9 0 0 1 19 5"></path>
+      </svg>
+      <span class="text-[11px] md:text-xs">Sync</span>
+    </button>
+  </div>
+</nav>
+
+  <main class="max-w-6xl mx-auto mt-6 mb-10">
+    <h2 class="text-xl font-bold text-blue-700 mb-3">Sales / Penjualan</h2>
+    <!-- Form transaksi -->
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
+        <label class="font-semibold">Date</label>
+        <input type="date" id="tglJual" class="border px-2 py-1 rounded" required>
+        <label class="font-semibold">Kasir</label>
+        <input type="text" id="kasir" class="border px-2 py-1 rounded" value="Umum">
+        <label class="font-semibold">Customer</label>
+        <input type="text" id="pelanggan" class="border px-2 py-1 rounded" placeholder="Umum">
+      </div>
+<div class="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
+  <label class="font-semibold">Barcode / Produk</label>
+  <div class="flex gap-2 w-full mb-2">
+    <!-- Input search with datalist -->
+    <input list="barcodeList" id="barcodeInput" class="border px-2 py-1 rounded flex-1" placeholder="Scan / Cari produk..." autocomplete="off">
+    <datalist id="barcodeList"></datalist>
+    <button id="scanBarcode" type="button" class="px-3 rounded bg-blue-500 text-white font-bold text-sm flex-shrink-0">🔍 Scan</button>
+  </div>
+  <div class="flex gap-2 w-full mb-2">
+    <select id="barcodeDropdown" class="border px-2 py-1 rounded flex-1">
+      <option value="">-- Pilih produk dari daftar --</option>
+    </select>
+    <span class="text-xs text-gray-400 flex items-center">atau</span>
+  </div>
+
+  <label class="font-semibold">Qty</label>
+  <input type="number" min="1" id="qtyJual" class="border px-2 py-1 rounded" value="1">
+  <button id="addItem" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 rounded mt-3 shadow">Add</button>
+</div>
+      <div class="bg-white p-4 rounded-lg shadow flex flex-col gap-2 items-center justify-center">
+        <div class="text-right w-full font-semibold">Invoice</div>
+        <div id="invoiceNo" class="font-mono text-lg font-bold text-blue-700">TOKO/PNJ/2024-08-21/001</div>
+        <div class="text-6xl font-bold text-right text-green-700" id="grandTotal">0</div>
+      </div>
+    </div>
+    <!-- Keranjang / Cart Table -->
+    <div class="bg-white rounded-lg shadow p-3 mt-5">
+      <table class="min-w-full text-sm border">
+        <thead>
+          <tr class="bg-blue-50 text-blue-700">
+            <th class="border-b px-2 py-1">#</th>
+            <th class="border-b px-2 py-1">Barcode</th>
+            <th class="border-b px-2 py-1">Product Item</th>
+            <th class="border-b px-2 py-1 text-right">Price</th>
+            <th class="border-b px-2 py-1 text-right">Qty</th>
+            <th class="border-b px-2 py-1 text-right">Discount</th>
+            <th class="border-b px-2 py-1 text-right">Total</th>
+            <th class="border-b px-2 py-1">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="cartTable"></tbody>
+      </table>
+    </div>
+    <!-- Ringkasan -->
+    <div class="grid md:grid-cols-3 gap-4 mt-5">
+      <div class="bg-white p-3 rounded-lg shadow flex flex-col gap-2">
+        <label>Sub Total</label>
+        <input id="subTotal" class="border rounded px-2 py-1 bg-gray-100 text-right" readonly>
+        <label>Discount</label>
+        <input id="diskonTransaksi" class="border rounded px-2 py-1 text-right" value="0">
+        <label>Grand Total</label>
+        <input id="grandTotal2" class="border rounded px-2 py-1 bg-gray-100 text-right font-bold text-xl" readonly>
+      </div>
+      <div class="bg-white p-3 rounded-lg shadow flex flex-col gap-2">
+        <label>Cash</label>
+        <input id="tunai" type="number" inputmode="numeric" pattern="[0-9]*" class="border rounded px-2 py-1 text-right" value="">
+        <label>Change</label>
+        <input id="kembali" class="border rounded px-2 py-1 bg-gray-100 text-right" readonly>
+        <label>Note</label>
+        <input id="note" class="border rounded px-2 py-1">
+      </div>
+      <div class="flex flex-col gap-2 justify-end items-end">
+        <button id="cancelTransaksi" class="bg-orange-400 hover:bg-orange-600 text-white font-bold px-5 py-2 rounded shadow mb-2">Cancel</button>
+        <button id="prosesBayar" class="bg-green-600 hover:bg-green-800 text-white font-bold px-5 py-3 rounded shadow text-xl">Process Payment</button>
+      </div>
+    </div>
+  </main>
+  <div id="toast" class="fixed top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white py-2 px-5 rounded shadow z-[9999] transition-all duration-300 text-sm font-semibold hidden" style="min-width:180px; text-align:center; opacity:0;"></div>
+
+  <div id="loader" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white px-8 py-4 rounded shadow text-lg font-semibold flex items-center gap-3">
+    <svg class="animate-spin h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+    Loading...
+  </div>
+</div>
+<!-- Modal Barcode Scanner -->
+<div id="scanModal" class="fixed inset-0 z-50 bg-black bg-opacity-60 hidden flex items-center justify-center">
+  <div class="bg-white rounded-xl p-4 shadow max-w-sm w-full relative">
+  <button id="toggleFlash" type="button"
+  class="absolute top-2 left-2 text-yellow-500 bg-yellow-100 px-2 py-1 rounded shadow font-bold hover:bg-yellow-300 hidden">
+  🔦 Flash
+</button>
+    <button onclick="tutupScan()" class="absolute top-2 right-2 text-gray-500 hover:text-red-500">&times;</button>
+    <h3 class="text-lg font-bold text-blue-700 mb-3">Scan Barcode</h3>
+    <div id="reader" class="mx-auto"></div>
+    <div id="scanStatus" class="text-center text-xs text-gray-400 mt-2"></div>
+  </div>
+</div>
+
+
+<script>
+// --- UNIVERSAL TOAST ---
+function showToast(msg, type = "info") {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.remove('hidden');
+  toast.style.background = type === "error" ? "#dc2626"
+    : (type === "success" ? "#16a34a" : "#2563eb");
+  toast.style.opacity = 1;
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => {
+    toast.style.opacity = 0;
+    setTimeout(() => toast.classList.add('hidden'), 350);
+  }, 2200);
+}
+
+// ===== Loader =====
+function showLoading(msg) {
+  const loader = document.getElementById('loader');
+  if (loader) loader.querySelector('div').lastChild.textContent = msg || "Loading...";
+  loader.classList.remove('hidden');
+}
+function hideLoading() {
+  document.getElementById('loader').classList.add('hidden');
+}
+
+// --- Ganti dengan URL API kamu
+const apiPenerimaan = "https://script.google.com/macros/s/AKfycbx4isG32ZZD/exec";
+const apiPenjualan = "https://script.google.com/macros/s/AKfycbyL5WiIAOq2ZJS6B3KLl2/exec";
+let dataBarang = [];
+let cart = [];
+
+// ======= CACHE BARANG DENGAN TTL 10 MENIT =======
+function setBarangCache(data) {
+  const payload = { data, time: Date.now() };
+  localStorage.setItem('dataBarangPenjualan', JSON.stringify(payload));
+}
+function getBarangCache() {
+  const raw = localStorage.getItem('dataBarangPenjualan');
+  if (!raw) return null;
+  try {
+    const obj = JSON.parse(raw);
+    if ((Date.now() - obj.time) > 10*60*1000) { // TTL 10 menit
+      localStorage.removeItem('dataBarangPenjualan');
+      return null;
+    }
+    return obj.data;
+  } catch {
+    localStorage.removeItem('dataBarangPenjualan');
+    return null;
+  }
+}
+
+// --- Load barang untuk datalist & dropdown (pakai cache/loader!)
+async function loadBarang() {
+  showLoading("Mengambil data produk...");
+  await new Promise(r => setTimeout(r, 30));
+  let cache = getBarangCache();
+  if (cache) {
+    dataBarang = cache;
+  } else {
+    const res = await fetch(apiPenerimaan);
+    dataBarang = await res.json();
+    setBarangCache(dataBarang);
+  }
+  hideLoading();
+
+  // Datalist untuk input search
+  const datalist = document.getElementById('barcodeList');
+  datalist.innerHTML = "";
+  dataBarang.forEach(barang => {
+    let opt = document.createElement('option');
+    opt.value = barang.kode + " - " + barang.nama;
+    datalist.appendChild(opt);
+  });
+
+  // Dropdown manual
+  const dropdown = document.getElementById('barcodeDropdown');
+  dropdown.innerHTML = '<option value="">-- Pilih produk dari daftar --</option>';
+  dataBarang.forEach(barang => {
+    dropdown.innerHTML += `<option value="${barang.kode}">${barang.kode} - ${barang.nama}</option>`;
+  });
+}
+loadBarang();
+
+// Di bawah script
+document.getElementById('btnSyncBarang').onclick = async function() {
+  if (!confirm('Yakin ingin memperbarui data produk dari server?')) return;
+  showLoading('Sync data produk...');
+  await new Promise(r => setTimeout(r, 30));
+  localStorage.removeItem('dataBarangPenjualan');
+  await loadBarang();
+  hideLoading();
+  showToast('Data produk sudah diperbarui!', 'success');
+};
+
+// --- Helper: Ambil kode produk dari "KODE - Nama"
+function extractKode(str) {
+  return (str || '').split(" - ")[0].trim();
+}
+
+// --- SCAN BARCODE: scan/input kode → isi input search & dropdown
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = 1175;
+    o.connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.18);
+    setTimeout(()=>ctx.close(), 320);
+  } catch (e) {}
+}
+
+let scanner = null;
+let isFlashOn = false;
+
+document.getElementById('scanBarcode').onclick = function() {
+  document.getElementById('scanModal').classList.remove('hidden');
+  document.getElementById('scanStatus').textContent = "Arahkan barcode ke kamera";
+  document.getElementById('toggleFlash').classList.add('hidden');
+  isFlashOn = false;
+  // Reset tombol flash setiap buka modal
+  const btnFlash = document.getElementById('toggleFlash');
+  btnFlash.textContent = "🔦 Flash";
+  btnFlash.classList.remove('bg-yellow-300');
+  btnFlash.classList.add('bg-yellow-100');
+
+  if (!scanner) {
+    scanner = new Html5Qrcode("reader");
+  }
+  scanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: function(viewfinderWidth, viewfinderHeight) {
+        let size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.92);
+        return { width: size, height: size };
+      }
+    },
+    (decodedText, decodedResult) => {
+      // Isi input barcode & sync ke dropdown
+      const barang = dataBarang.find(b => String(b.kode) === String(decodedText));
+      playBeep(); // Suara beep!
+      if (barang) {
+        document.getElementById('barcodeInput').value = `${barang.kode} - ${barang.nama}`;
+        document.getElementById('barcodeDropdown').value = barang.kode;
+        document.getElementById('qtyJual').focus();
+        document.getElementById('scanStatus').textContent = "Barcode terdeteksi!";
+        setTimeout(() => { tutupScan(); }, 350);
+      } else {
+        document.getElementById('scanStatus').textContent = "Barcode tidak ditemukan!";
+        setTimeout(() => { tutupScan(); }, 900);
+      }
+    },
+    (errorMessage) => {
+      // Optional: tampilkan pesan error scanning
+    }
+  ).then(() => {
+    setTimeout(() => {
+      let track = scanner.getRunningTrack && scanner.getRunningTrack();
+      if (track && typeof track.getCapabilities === "function") {
+        const caps = track.getCapabilities();
+        if (caps.torch) {
+          document.getElementById('toggleFlash').classList.remove('hidden');
+        }
+      }
+    }, 300);
+  }).catch(err => {
+    document.getElementById('scanStatus').textContent = "Tidak bisa akses kamera!";
+  });
+};
+
+// ===== Toggle Flash/Torch =====
+document.getElementById('toggleFlash').onclick = function() {
+  if (!scanner) return;
+  const track = scanner.getRunningTrack && scanner.getRunningTrack();
+  if (track && typeof track.applyConstraints === "function") {
+    isFlashOn = !isFlashOn;
+    track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+    this.textContent = isFlashOn ? "🔦 Flash ON" : "🔦 Flash";
+    this.classList.toggle('bg-yellow-300', isFlashOn);
+    this.classList.toggle('bg-yellow-100', !isFlashOn);
+  }
+};
+
+// ===== Tutup Kamera & Matikan Flash & Reset Scanner =====
+function tutupScan() {
+  document.getElementById('scanModal').classList.add('hidden');
+  if (scanner) {
+    const track = scanner.getRunningTrack && scanner.getRunningTrack();
+    if (track && typeof track.applyConstraints === "function") {
+      track.applyConstraints({ advanced: [{ torch: false }] });
+    }
+    scanner.stop().then(() => {
+      document.getElementById('reader').innerHTML = "";
+      scanner = null;
+    }).catch(() => {
+      scanner = null;
+    });
+  }
+  isFlashOn = false;
+  var btnFlash = document.getElementById('toggleFlash');
+  if(btnFlash) {
+    btnFlash.textContent = "🔦 Flash";
+    btnFlash.classList.remove('bg-yellow-300');
+    btnFlash.classList.add('bg-yellow-100');
+    btnFlash.classList.add('hidden');
+  }
+}
+
+// --- Add ke keranjang
+function tambahCart() {
+  let kode = extractKode(document.getElementById('barcodeInput').value);
+  if (!kode) kode = document.getElementById('barcodeDropdown').value;
+  const qty = Number(document.getElementById('qtyJual').value);
+  const barang = dataBarang.find(b => String(b.kode) === String(kode));
+  if (!barang) return showToast("Produk tidak ditemukan!", "error");
+  if (qty > barang.qty) return showToast("Stok tidak cukup!", "error");
+  // Cek duplikat
+  const ada = cart.find(it => it.kode === kode);
+  if (ada) {
+    if ((ada.qty + qty) > barang.qty) return showToast("Stok tidak cukup!", "error");
+    ada.qty += qty;
+    ada.total = (ada.qty * barang.hargaJual) - (ada.diskon || 0);
+  } else {
+    cart.push({
+      kode: barang.kode,
+      nama: barang.nama,
+      hargaJual: barang.hargaJual,
+      qty: qty,
+      diskon: 0,
+      total: (qty * barang.hargaJual)
+    });
+  }
+  renderCart();
+  document.getElementById('barcodeInput').value = '';
+  document.getElementById('barcodeDropdown').value = '';
+  document.getElementById('qtyJual').value = 1;
+}
+document.getElementById('addItem').onclick = tambahCart;
+
+// --- Render cart table
+function renderCart() {
+  const tb = document.getElementById('cartTable');
+  tb.innerHTML = "";
+  let subTotal = 0;
+  cart.forEach((item, idx) => {
+    subTotal += item.total - (item.diskon||0);
+    tb.innerHTML += `<tr>
+      <td class="border-b px-2 text-center">${idx+1}</td>
+      <td class="border-b px-2">${item.kode}</td>
+      <td class="border-b px-2">${item.nama}</td>
+      <td class="border-b px-2 text-right">${item.hargaJual}</td>
+      <td class="border-b px-2 text-right">
+        <input type="number" min="1" class="w-14 border rounded px-1 text-right"
+          value="${item.qty}" onchange="updateQty(${idx},this.value)">
+      </td>
+      <td class="border-b px-2 text-right"><input type="number" class="w-14 border rounded px-1 text-right" min="0" value="${item.diskon||0}" onchange="updateDiskon(${idx},this.value)"></td>
+      <td class="border-b px-2 text-right">${item.qty*item.hargaJual - (item.diskon||0)}</td>
+      <td class="border-b px-2 text-center">
+        <button onclick="hapusCart(${idx})" class="text-red-600 hover:underline text-xs ml-2">Delete</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('subTotal').value = subTotal;
+  hitungGrandTotal();
+}
+window.updateQty = function(idx, val) {
+  const qtyBaru = Number(val) || 1;
+  const kode = cart[idx].kode;
+  const barang = dataBarang.find(b => String(b.kode) === String(kode));
+  if (!barang) return showToast("Produk tidak ditemukan!", "error");
+  if (qtyBaru > barang.qty) {
+    showToast("Qty melebihi stok tersedia!", "error");
+    renderCart();
+    return;
+  }
+  cart[idx].qty = qtyBaru;
+  cart[idx].total = (qtyBaru * cart[idx].hargaJual) - (cart[idx].diskon||0);
+  renderCart();
+};
+
+window.updateDiskon = function(idx, val) {
+  cart[idx].diskon = Number(val)||0;
+  cart[idx].total = (cart[idx].qty * cart[idx].hargaJual) - cart[idx].diskon;
+  renderCart();
+}
+window.hapusCart = function(idx) {
+  if(confirm('Hapus item ini?')) {
+    cart.splice(idx,1);
+    renderCart();
+  }
+}
+
+function hitungGrandTotal() {
+  const subTotal = Number(document.getElementById('subTotal').value) || 0;
+  const diskonTransaksi = Number(document.getElementById('diskonTransaksi').value) || 0;
+  const grandTotal = Math.max(subTotal - diskonTransaksi,0);
+  document.getElementById('grandTotal').textContent = grandTotal;
+  document.getElementById('grandTotal2').value = grandTotal;
+  // Kembalian
+  const tunai = Number(document.getElementById('tunai').value)||0;
+  document.getElementById('kembali').value = tunai>grandTotal ? (tunai-grandTotal) : 0;
+}
+document.getElementById('diskonTransaksi').oninput = hitungGrandTotal;
+document.getElementById('tunai').oninput = hitungGrandTotal;
+
+// ===== PROSES BAYAR DENGAN LOADER + PRINT NOTA =====
+document.getElementById('prosesBayar').onclick = async function() {
+  if (cart.length==0) return showToast('Keranjang kosong!', 'error');
+  const grandTotal = Number(document.getElementById('grandTotal2').value)||0;
+  const tunai = Number(document.getElementById('tunai').value)||0;
+  if (tunai<grandTotal) return showToast('Uang kurang!', 'error');
+  const tglJual = document.getElementById('tglJual').value;
+  const kasir = document.getElementById('kasir').value;
+  const pelanggan = document.getElementById('pelanggan').value;
+  const note = document.getElementById('note').value;
+  const invoice = document.getElementById('invoiceNo').textContent;
+
+  showLoading("Memproses transaksi...");
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    await fetch(apiPenjualan, {
+      method: "POST",
+      body: JSON.stringify({
+        invoice, tglJual, kasir, pelanggan, note,
+        items: cart
+      })
+    });
+    hideLoading();
+    // Print nota (popup browser print)
+    printNota({invoice, tglJual, kasir, pelanggan, note, cart, grandTotal, tunai});
+    // Reset form
+    cart = [];
+    renderCart();
+    document.getElementById('tunai').value = '';
+    document.getElementById('note').value = '';
+    document.getElementById('grandTotal').textContent = '0';
+    document.getElementById('grandTotal2').value = '0';
+    document.getElementById('subTotal').value = '';
+    document.getElementById('kembali').value = '';
+    document.getElementById('diskonTransaksi').value = '0';
+    invoiceGenerate();
+    loadBarang();
+    showToast('Transaksi berhasil diproses!', 'success');
+  } catch(e) {
+    hideLoading();
+    showToast("Terjadi kesalahan, coba lagi!", "error");
+  }
+};
+
+document.getElementById('cancelTransaksi').onclick = function() {
+  if(confirm('Batalkan transaksi?')) {
+    cart = [];
+    renderCart();
+    document.getElementById('tunai').value = '';
+    document.getElementById('note').value = '';
+    document.getElementById('grandTotal').textContent = '0';
+    document.getElementById('grandTotal2').value = '0';
+    document.getElementById('subTotal').value = '';
+    document.getElementById('kembali').value = '';
+    document.getElementById('diskonTransaksi').value = '0';
+    invoiceGenerate();
+    showToast('Transaksi dibatalkan', 'success');
+  }
+};
+
+// ======== PRINT NOTA ========
+document.getElementById('prosesBayar').onclick = async function() {
+  if (cart.length==0) return alert('Keranjang kosong!');
+  const grandTotal = Number(document.getElementById('grandTotal2').value)||0;
+  const tunai = Number(document.getElementById('tunai').value)||0;
+  if (tunai<grandTotal) return alert('Uang kurang!');
+  const tglJual = document.getElementById('tglJual').value;
+  const kasir = document.getElementById('kasir').value;
+  const pelanggan = document.getElementById('pelanggan').value;
+  const note = document.getElementById('note').value;
+  const invoice = document.getElementById('invoiceNo').textContent;
+
+  showLoading("Memproses transaksi...");
+  try {
+    await fetch(apiPenjualan, {
+      method: "POST",
+      body: JSON.stringify({
+        invoice, tglJual, kasir, pelanggan, note,
+        items: cart
+      })
+    });
+    hideLoading();
+    // Redirect ke print-nota.html dengan data nota (bawa data via querystring)
+    const notaObj = {invoice, tglJual, kasir, pelanggan, note, cart, grandTotal, tunai};
+    window.location.href = 'print-nota.html?data=' + encodeURIComponent(JSON.stringify(notaObj));
+  } catch(e) {
+    hideLoading();
+    alert("Terjadi kesalahan, coba lagi!");
+  }
+};
+
+window.addEventListener('DOMContentLoaded', function() {
+  // Ambil dari localStorage (hasil setting user di index.html)
+  var defaultKasir = localStorage.getItem('defaultKasir') || 'Umum';
+  var inputKasir = document.getElementById('kasir');
+  if (inputKasir) inputKasir.value = defaultKasir;
+
+  // Set tanggal otomatis hari ini untuk input date
+  var inputTgl = document.getElementById('tglJual');
+  if (inputTgl && !inputTgl.value) {
+    inputTgl.value = new Date().toISOString().slice(0,10);
+  }
+});
+
+  </script>
+</body>
+</html>

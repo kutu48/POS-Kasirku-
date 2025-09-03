@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Transaksi Penerimaan Barang</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="./js/tailwindcss.js"></script>
+  <script src="./js/html5-qrcode.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- Header -->
+  <header class="w-full bg-blue-600 text-white text-center shadow-md py-5">
+    <h1 class="text-2xl md:text-3xl font-bold mb-1">POS Dashboard</h1>
+    <p class="opacity-90 text-base">Sistem Kasir berbasis Web &amp; Spreadsheet</p>
+  </header>
+<!-- Navbar Tailwind Responsive & Overflow -->
+<nav class="w-full bg-white shadow px-1 md:px-6 py-1 sticky top-0 z-50">
+  <div class="flex items-center gap-0.5 md:gap-2 overflow-x-auto flex-nowrap max-w-full">
+    <a href="index.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M3 12l9-9 9 9" />
+        <path d="M9 21V9h6v12" />
+      </svg>
+      <span class="text-[11px] md:text-xs">Home</span>
+    </a>
+    <a href="penerimaan.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M12 3v12" />
+        <path d="M12 15l-4-4" />
+        <path d="M12 15l4-4" />
+        <rect x="3" y="17" width="18" height="4" rx="2"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Terima</span>
+    </a>
+    <a href="pengeluaran.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M12 21V9" />
+        <path d="M12 9l4 4" />
+        <path d="M12 9l-4 4" />
+        <rect x="3" y="3" width="18" height="4" rx="2"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Keluar</span>
+    </a>
+    <a href="laporan.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M3 3v18h18" />
+        <rect x="7" y="12" width="2" height="6"/>
+        <rect x="11" y="8" width="2" height="10"/>
+        <rect x="15" y="5" width="2" height="13"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Laporan</span>
+    </a>
+    <a href="stok.html" class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-105" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <polygon points="12 2 22 7 12 12 2 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+      <span class="text-[11px] md:text-xs">Stok</span>
+    </a>
+    <!-- Tombol Sync -->
+    <button id="btnSyncBarang"
+      class="flex flex-col items-center text-blue-600 hover:text-blue-800 px-1 py-0 font-medium transition group bg-transparent border-none cursor-pointer"
+      title="Sync Data" type="button">
+      <svg class="w-7 h-7 mb-0.5 group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24">
+        <path d="M4 4v6h6"></path>
+        <path d="M20 20v-6h-6"></path>
+        <path d="M5 19A9 9 0 0 1 19 5"></path>
+      </svg>
+      <span class="text-[11px] md:text-xs">Sync</span>
+    </button>
+  </div>
+</nav>
+  <div id="loader" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+    <div class="bg-white px-8 py-4 rounded shadow text-lg font-semibold flex items-center gap-3">
+      <svg class="animate-spin h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+      Loading...
+    </div>
+  </div>
+  <!-- Form Penerimaan -->
+<div class="max-w-2xl w-full mx-auto mt-6 mb-8 bg-white shadow-md rounded-2xl p-6">
+  <h2 class="text-lg font-bold text-blue-700 text-center mb-3">Input Transaksi Penerimaan</h2>
+<form id="formPenerimaan" class="flex flex-col gap-3">
+  <label class="font-semibold">Kode Barang
+    <div class="flex gap-2">
+      <input type="text" id="kodeBarang" class="flex-1 border border-gray-300 rounded-lg px-3 py-2" placeholder="Kode Barang" autocomplete="off" required>
+      <button type=	"button" id="scanBarcode" class="px-3 py-2 rounded bg-blue-600 text-white font-semibold text-sm hover:bg-blue-800 flex items-center gap-1">
+        <svg class="w-5 h-5" ...></svg>
+        Scan
+      </button>
+    </div>
+  </label>
+
+  <label class="font-semibold">Pilih Kode Barang (Dropdown)
+    <select id="dropdownBarang" class="border border-gray-300 rounded-lg px-3 py-2 w-full">
+      <option value="">-- Pilih Kode Barang --</option>
+    </select>
+  </label>
+
+  <label class="font-semibold">Nama Barang
+    <input type="text" id="namaBarang" class="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder="Nama Barang" required>
+  </label>
+
+  <div class="flex gap-2">
+    <label class="font-semibold flex-1">Satuan
+      <input type="text" id="satuanBarang" class="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder="Satuan" required>
+    </label>
+    <label class="font-semibold w-40">Qty
+      <input type="number" id="qty" min="1" class="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder="Qty" required>
+    </label>
+  </div>
+
+  <div class="flex gap-2">
+    <label class="font-semibold flex-1">Harga Beli
+      <input type="number" id="hargaBeli" min="0" class="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder="Harga Beli" required>
+    </label>
+    <label class="font-semibold flex-1">Harga Jual
+      <input type="number" id="hargaJual" min="0" class="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder="Harga Jual" required>
+    </label>
+  </div>
+
+  <label class="font-semibold">Tanggal Masuk
+    <input type="date" id="tglDatang" class="border border-gray-300 rounded-lg px-3 py-2 w-full" required>
+  </label>
+
+  <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 rounded-lg mt-2 shadow w-full">
+    Tambah Penerimaan
+  </button>
+</form>
+</div>
+
+  <!-- Tabel + Control -->
+  <main class="max-w-5xl mx-auto p-2 md:p-8">
+    <div class="mb-4 flex flex-col md:flex-row items-center gap-2">
+      <input id="filterInput" type="text" class="border px-3 py-1 rounded shadow w-full md:w-64" placeholder="Cari...">
+      <select id="sortSelect" class="border px-3 py-1 rounded shadow">
+        <option value="tglDatang">Sort: Tanggal</option>
+        <option value="kode">Sort: Kode</option>
+        <option value="nama">Sort: Nama</option>
+        <option value="qty">Sort: Qty</option>
+        <option value="hargaBeli">Sort: Harga Beli</option>
+        <option value="hargaJual">Sort: Harga Jual</option>
+      </select>
+    </div>
+    <div class="relative min-h-[40px] overflow-x-auto rounded-xl shadow">
+      <div id="loading" class="hidden absolute inset-0 flex justify-center items-center bg-white/80 z-10">
+        <svg class="animate-spin h-7 w-7 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        <span class="ml-2 text-blue-700 font-semibold text-sm">Memuat data...</span>
+      </div>
+      <table class="min-w-full border text-sm bg-white rounded-xl overflow-hidden">
+        <thead>
+          <tr class="bg-blue-50 text-blue-700 select-none">
+            <th class="py-2 px-2 border-b cursor-pointer" data-sort="kode">Kode</th>
+            <th class="py-2 px-2 border-b cursor-pointer" data-sort="nama">Nama</th>
+            <th class="py-2 px-2 border-b cursor-pointer text-right" data-sort="qty">Qty</th>
+            <th class="py-2 px-2 border-b cursor-pointer text-right" data-sort="hargaBeli">Harga Beli</th>
+            <th class="py-2 px-2 border-b cursor-pointer text-right" data-sort="hargaJual">Harga Jual</th>
+            <th class="py-2 px-2 border-b cursor-pointer" data-sort="tglDatang">Tgl Datang</th>
+            <th class="py-2 px-2 border-b">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tabelPenerimaan"></tbody>
+      </table>
+    </div>
+    <div class="flex justify-between items-center mt-3">
+      <button id="prevPage" class="px-3 py-1 rounded bg-blue-100 hover:bg-blue-200">Prev</button>
+      <span id="pageInfo" class="font-semibold"></span>
+      <button id="nextPage" class="px-3 py-1 rounded bg-blue-100 hover:bg-blue-200">Next</button>
+    </div>
+  </main>
+  <!-- =================== MODAL EDIT =================== -->
+  <div id="modalEdit" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div class="bg-white rounded-2xl shadow-lg w-[95vw] max-w-md p-6 relative">
+      <button onclick="closeEditModal()" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-2xl font-bold">&times;</button>
+      <h3 class="text-xl font-bold text-blue-700 mb-3 text-center">Edit Data Penerimaan</h3>
+      <form id="formEdit" class="flex flex-col gap-2">
+        <input type="hidden" id="editIndex">
+        <input type="hidden" id="editKodeLama">
+        <input type="hidden" id="editTglDatangLama">
+        <label class="font-semibold">Kode Barang
+          <input type="text" id="editKode" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
+        </label>
+        <label class="font-semibold">Nama
+          <input type="text" id="editNama" class="border rounded px-3 py-2 w-full bg-gray-100" readonly>
+        </label>
+        <label class="font-semibold">Satuan
+          <input type="text" id="editSatuan" class="border rounded px-3 py-2 w-full bg-gray-100" required>
+        </label>
+        <label class="font-semibold">Qty
+          <input type="number" id="editQty" class="border rounded px-3 py-2 w-full" min="1" required>
+        </label>
+        <label class="font-semibold">Harga Beli
+          <input type="number" id="editHargaBeli" class="border rounded px-3 py-2 w-full" min="0" required>
+        </label>
+        <label class="font-semibold">Harga Jual
+          <input type="number" id="editHargaJual" class="border rounded px-3 py-2 w-full" min="0" required>
+        </label>
+        <label class="font-semibold">Tanggal Datang
+          <input type="date" id="editTglDatang" class="border rounded px-3 py-2 w-full" required>
+        </label>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 rounded-lg mt-2">Save</button>
+      </form>
+    </div>
+  </div>
+  <!-- Modal Scan Barcode -->
+<div id="scanModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-6 shadow-lg relative w-[96vw] max-w-md">
+    <span onclick="tutupScan()" class="absolute right-3 top-2 text-2xl cursor-pointer font-bold">&times;</span>
+    <div id="scanStatus" class="mb-2 text-gray-700 text-center">Arahkan barcode ke kamera</div>
+    <div id="reader" style="min-height:220px; min-width:220px;"></div>
+    <button id="toggleFlash" class="hidden mt-3 px-3 py-2 bg-yellow-100 rounded">🔦 Flash</button>
+  </div>
+</div>
+
+<<!-- Toast container, letakkan sekali di paling atas (di body, sebelum header/nav/atau paling bawah sebelum </body>) -->
+<div id="toast" class="fixed z-[9999] left-1/2 -translate-x-1/2 top-6 px-6 py-2 text-white font-bold rounded shadow-lg text-sm md:text-base hidden transition-all duration-300"></div>
+
+<script>
+function showToast(msg, type = "info") {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.remove('hidden');
+  toast.style.background = type === "error" ? "#dc2626"
+    : (type === "success" ? "#16a34a" : "#2563eb");
+  toast.style.opacity = 1;
+  setTimeout(() => {
+    toast.style.opacity = 0;
+    setTimeout(() => toast.classList.add('hidden'), 400);
+  }, 2200);
+}
+
+function showToast(msg, type = "info") {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.remove('hidden');
+  toast.style.background = type === "error" ? "#dc2626" : (type === "success" ? "#16a34a" : "#2563eb");
+  toast.style.opacity = 1;
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => {
+    toast.style.opacity = 0;
+    setTimeout(() => toast.classList.add('hidden'), 350);
+  }, 2200);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  // ================= UNIVERSAL LOADER =================
+  function showLoading(msg = "Loading...") {
+    const loader = document.getElementById('loader');
+    if (!loader) return;
+    loader.classList.remove('hidden');
+    const loaderText = loader.querySelector('#loaderText');
+    if (loaderText) loaderText.textContent = msg;
+  }
+  function hideLoading() {
+    const loader = document.getElementById('loader');
+    if (!loader) return;
+    loader.classList.add('hidden');
+  }
+
+  // ============= TOMBOL SYNC DATA PRODUK =============
+  document.getElementById('btnSyncBarang').onclick = async function() {
+    if (!confirm('Yakin ingin memperbarui data produk dari server?')) return;
+    showLoading('Sync data produk...');
+    await new Promise(r => setTimeout(r, 10)); // <-- Tambahkan delay supaya loader terlihat
+    localStorage.removeItem('dataBarangPenjualan');
+    localStorage.removeItem('penerimaanData');
+    await loadMasterData(true);
+    await tampilkanPenerimaan(true);
+    hideLoading();
+    showToast('Data produk sudah diperbarui!', 'success');
+  };
+
+  // ============= SET DEFAULT TANGGAL =================
+  var inputTgl = document.getElementById('tglDatang');
+  if (inputTgl) {
+    inputTgl.value = new Date().toISOString().slice(0,10);
+  }
+
+  // ============ API URLS ============
+  const apiMaster = "https://script.google.com/macros/s/AKfycbwnybCYTWvoJvugHz9ywLF217Gygd82/exec";
+  const apiPenerimaan = "https://script.google.com/macros/s/AKfycbx4isG32ZZDT4QKngWbW/exec";
+
+  // ============ MASTER DATA (DROPDOWN & AUTOFILL) ============
+  let masterData = [];
+  async function loadMasterData(force = false) {
+    showLoading("Mengambil master data...");
+    await new Promise(r => setTimeout(r, 10)); // <-- Tambahkan delay supaya loader terlihat
+    // Cache: TTL 10 menit
+    let cache = localStorage.getItem('masterData');
+    if (cache && !force) {
+      try {
+        const obj = JSON.parse(cache);
+        if ((Date.now() - obj.time) < 10*60*1000) {
+          masterData = obj.data;
+        } else {
+          localStorage.removeItem('masterData');
+        }
+      } catch {
+        localStorage.removeItem('masterData');
+      }
+    }
+    if (!masterData.length || force) {
+      const res = await fetch(apiMaster);
+      masterData = await res.json();
+      localStorage.setItem('masterData', JSON.stringify({ data: masterData, time: Date.now() }));
+    }
+    // Render dropdown
+    const dropdown = document.getElementById('dropdownBarang');
+    dropdown.innerHTML = '<option value="">-- Pilih Kode Barang (Dropdown) --</option>';
+    masterData.forEach(barang => {
+      dropdown.innerHTML += `<option value="${barang.kode}">${barang.kode} - ${barang.nama}</option>`;
+    });
+    hideLoading();
+  }
+  loadMasterData();
+
+  function tampilkanNamaSatuan(kode) {
+    const barang = masterData.find(b => String(b.kode) === String(kode));
+    document.getElementById('namaBarang').value = barang ? barang.nama : '';
+    document.getElementById('satuanBarang').value = barang ? barang.satuan : '';
+  }
+
+  document.getElementById('kodeBarang').addEventListener('input', function() {
+    tampilkanNamaSatuan(this.value);
+    document.getElementById('dropdownBarang').value = this.value;
+  });
+  document.getElementById('dropdownBarang').addEventListener('change', function() {
+    document.getElementById('kodeBarang').value = this.value;
+    tampilkanNamaSatuan(this.value);
+  });
+
+  // ============ NOTIFIKASI BEEP SAAT SCAN BERHASIL ============
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = 1175;
+      o.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.18);
+      setTimeout(()=>ctx.close(), 320);
+    } catch (e) {}
+  }
+
+  // ============ BARCODE SCANNER ============
+  let scanner = null;
+  let isFlashOn = false;
+
+  document.getElementById('scanBarcode').onclick = function() {
+    document.getElementById('scanModal').classList.remove('hidden');
+    document.getElementById('scanStatus').textContent = "Arahkan barcode ke kamera";
+    document.getElementById('toggleFlash').classList.add('hidden');
+    isFlashOn = false;
+    const btnFlash = document.getElementById('toggleFlash');
+    btnFlash.textContent = "🔦 Flash";
+    btnFlash.classList.remove('bg-yellow-300');
+    btnFlash.classList.add('bg-yellow-100');
+
+    if (!scanner) {
+      scanner = new Html5Qrcode("reader");
+    }
+    scanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+          let size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.92);
+          return { width: size, height: size };
+        }
+      },
+      (decodedText) => {
+        document.getElementById('kodeBarang').value = decodedText;
+        playBeep();
+        tampilkanNamaSatuan(decodedText);
+        document.getElementById('dropdownBarang').value = decodedText;
+        document.getElementById('scanStatus').textContent = "Barcode terdeteksi!";
+        setTimeout(() => {
+          tutupScan();
+          setTimeout(() => {
+            document.getElementById('qty').focus();
+          }, 320);
+        }, 340);
+      }
+    ).then(() => {
+      setTimeout(() => {
+        let track = scanner.getRunningTrack && scanner.getRunningTrack();
+        if (track && typeof track.getCapabilities === "function") {
+          const caps = track.getCapabilities();
+          if (caps.torch) {
+            document.getElementById('toggleFlash').classList.remove('hidden');
+          }
+        }
+      }, 300);
+    }).catch(() => {
+      document.getElementById('scanStatus').textContent = "Tidak bisa akses kamera!";
+    });
+  };
+
+  var btnFlash = document.getElementById('toggleFlash');
+  if (btnFlash) {
+    btnFlash.onclick = function() {
+      if (!scanner) return;
+      const track = scanner.getRunningTrack && scanner.getRunningTrack();
+      if (track && typeof track.applyConstraints === "function") {
+        isFlashOn = !isFlashOn;
+        track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+        this.textContent = isFlashOn ? "🔦 Flash ON" : "🔦 Flash";
+        this.classList.toggle('bg-yellow-300', isFlashOn);
+        this.classList.toggle('bg-yellow-100', !isFlashOn);
+      }
+    };
+  }
+
+  function tutupScan() {
+    document.getElementById('scanModal').classList.add('hidden');
+    if (scanner) {
+      const track = scanner.getRunningTrack && scanner.getRunningTrack();
+      if (track && typeof track.applyConstraints === "function") {
+        track.applyConstraints({ advanced: [{ torch: false }] });
+      }
+      scanner.stop().then(() => {
+        document.getElementById('reader').innerHTML = "";
+        scanner = null;
+      }).catch(() => { scanner = null; });
+    }
+    isFlashOn = false;
+    var btnFlash = document.getElementById('toggleFlash');
+    if(btnFlash) {
+      btnFlash.textContent = "🔦 Flash";
+      btnFlash.classList.remove('bg-yellow-300');
+      btnFlash.classList.add('bg-yellow-100');
+      btnFlash.classList.add('hidden');
+    }
+  }
+  window.tutupScan = tutupScan;
+
+  // ============ TABEL PENERIMAAN (CACHE) ============
+  let penerimaanData = [];
+  let filteredData = [];
+  let sortKey = "tglDatang";
+  let sortAsc = true;
+  let currentPage = 1;
+  const pageSize = 7;
+
+  async function getPenerimaanData(force = false) {
+    let cache = localStorage.getItem('penerimaanData');
+    if (cache && !force) {
+      try {
+        return JSON.parse(cache);
+      } catch (e) {
+        localStorage.removeItem('penerimaanData');
+      }
+    }
+    const res = await fetch(apiPenerimaan + "?sheet=Penerimaan");
+    const data = await res.json();
+    localStorage.setItem('penerimaanData', JSON.stringify(data));
+    return data;
+  }
+
+  async function tampilkanPenerimaan(force = false) {
+    showLoading("Mengambil data penerimaan...");
+    await new Promise(r => setTimeout(r, 10)); // <-- Tambahkan delay supaya loader terlihat
+    try {
+      penerimaanData = await getPenerimaanData(force);
+      penerimaanData = penerimaanData.map(row => ({
+        ...row,
+        qty: Number(row.qty),
+        hargaBeli: Number(row.hargaBeli),
+        hargaJual: Number(row.hargaJual)
+      }));
+      filteredData = penerimaanData.slice();
+      currentPage = 1;
+      renderTable();
+    } catch (e) {
+      showToast('Gagal ambil data penerimaan!', 'error');
+    }
+    hideLoading();
+  }
+
+  document.getElementById('filterInput').oninput = function() {
+    const v = this.value.toLowerCase();
+    filteredData = penerimaanData.filter(row =>
+      String(row.kode).toLowerCase().includes(v) ||
+      String(row.nama).toLowerCase().includes(v) ||
+      String(row.qty).includes(v) ||
+      String(row.hargaBeli).includes(v) ||
+      String(row.hargaJual).includes(v) ||
+      String(row.tglDatang).includes(v)
+    );
+    currentPage = 1;
+    renderTable();
+  };
+
+  function sortBy(key) {
+    if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+    filteredData.sort((a, b) => {
+      if (["qty", "hargaBeli", "hargaJual"].includes(key)) {
+        return sortAsc ? a[key]-b[key] : b[key]-a[key];
+      }
+      return sortAsc ? String(a[key]).localeCompare(String(b[key])) : String(b[key]).localeCompare(String(a[key]));
+    });
+    renderTable();
+  }
+  document.getElementById('sortSelect').onchange = function() {
+    sortBy(this.value);
+  };
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.onclick = () => sortBy(th.dataset.sort);
+  });
+
+  document.getElementById('prevPage').onclick = function() {
+    if (currentPage > 1) { currentPage--; renderTable(); }
+  };
+  document.getElementById('nextPage').onclick = function() {
+    if (currentPage < Math.ceil(filteredData.length / pageSize)) { currentPage++; renderTable(); }
+  };
+
+  function formatTanggal(str) {
+    if (!str) return "";
+    let d = (str instanceof Date) ? str : new Date(str);
+    if (isNaN(d.getTime())) return String(str).slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function renderTable() {
+    const tabel = document.getElementById('tabelPenerimaan');
+    tabel.innerHTML = "";
+    let start = (currentPage - 1) * pageSize;
+    let end = Math.min(start + pageSize, filteredData.length);
+    for (let i = start; i < end; i++) {
+      const row = filteredData[i];
+      tabel.innerHTML += `<tr>
+        <td class="border-b py-2 px-2">${row.kode}</td>
+        <td class="border-b py-2 px-2">${row.nama}</td>
+        <td class="border-b py-2 px-2 text-right">${row.qty}</td>
+        <td class="border-b py-2 px-2 text-right">${row.hargaBeli}</td>
+        <td class="border-b py-2 px-2 text-right">${row.hargaJual}</td>
+        <td class="border-b py-2 px-2">${formatTanggal(row.tglDatang)}</td>
+        <td class="border-b py-2 px-2 text-center">
+          <button onclick="editRow(${i})" class="text-yellow-600 hover:text-yellow-800 mr-2" title="Edit">
+            <svg class="inline w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 15l0-2z"></path>
+              <path d="M19 19H5v-2.586a2 2 0 01.586-1.414l8-8a2 2 0 112.828 2.828l-8 8A2 2 0 015 16.414V19z"></path>
+            </svg>
+          </button>
+          <button onclick="deleteRow(${i})" class="text-red-600 hover:text-red-800" title="Hapus">
+            <svg class="inline w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zM19 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+        </td>
+      </tr>`;
+    }
+    document.getElementById('pageInfo').textContent =
+      filteredData.length === 0
+        ? "Tidak ada data"
+        : `Hal ${currentPage} dari ${Math.ceil(filteredData.length / pageSize)}`;
+  }
+
+  // INIT
+  tampilkanPenerimaan();
+
+  // ------ SUBMIT PENERIMAAN (Tambah Data)
+  document.getElementById('formPenerimaan').onsubmit = async function(e) {
+    e.preventDefault();
+    showLoading("Menyimpan data...");
+    await new Promise(r => setTimeout(r, 10)); // Delay agar loader terlihat
+    const kode = document.getElementById('kodeBarang').value.trim();
+    const qty = document.getElementById('qty').value;
+    const hargaBeli = document.getElementById('hargaBeli').value;
+    const hargaJual = document.getElementById('hargaJual').value;
+    const tglDatang = document.getElementById('tglDatang').value;
+    const barang = masterData.find(b => String(b.kode) === String(kode));
+    if (!barang) {
+      hideLoading();
+      showToast('Kode barang tidak ditemukan di master data!', 'error');
+      return;
+    }
+    const body = {
+      kode: kode,
+      nama: barang.nama,
+      satuan: barang.satuan,
+      qty: qty,
+      hargaBeli: hargaBeli,
+      hargaJual: hargaJual,
+      tglDatang: tglDatang
+    };
+    try {
+      const res = await fetch(apiPenerimaan, {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast('Data penerimaan berhasil disimpan!', 'success');
+        this.reset();
+        tampilkanNamaSatuan('');
+        localStorage.removeItem('penerimaanData');
+        localStorage.removeItem('dataBarangPenjualan');
+        await tampilkanPenerimaan(true);
+        await loadMasterData(true);
+      } else {
+        showToast('Gagal simpan data', 'error');
+      }
+    } catch (err) {
+      showToast('Error koneksi API!', 'error');
+    }
+    hideLoading();
+  };
+
+  // ========== MODAL EDIT ==========
+  window.editRow = function(idx) {
+    const data = filteredData[(currentPage - 1) * pageSize + idx];
+    document.getElementById('modalEdit').classList.remove('hidden');
+    document.getElementById('editIndex').value = (currentPage - 1) * pageSize + idx;
+    document.getElementById('editKode').value = data.kode;
+    document.getElementById('editNama').value = data.nama;
+    document.getElementById('editSatuan').value = data.satuan;
+    document.getElementById('editQty').value = data.qty;
+    document.getElementById('editHargaBeli').value = data.hargaBeli;
+    document.getElementById('editHargaJual').value = data.hargaJual;
+    document.getElementById('editTglDatang').value = data.tglDatang;
+    document.getElementById('editKodeLama').value = data.kode;
+    document.getElementById('editTglDatangLama').value = data.tglDatang;
+  }
+  window.closeEditModal = function() {
+    document.getElementById('modalEdit').classList.add('hidden');
+  }
+
+  document.getElementById('formEdit').onsubmit = async function(e) {
+    e.preventDefault();
+    showLoading("Menyimpan perubahan...");
+    await new Promise(r => setTimeout(r, 10));
+    const kode = document.getElementById('editKode').value;
+    const nama = document.getElementById('editNama').value;
+    const satuan = document.getElementById('editSatuan').value;
+    const qty = document.getElementById('editQty').value;
+    const hargaBeli = document.getElementById('editHargaBeli').value;
+    const hargaJual = document.getElementById('editHargaJual').value;
+    const tglDatang = document.getElementById('editTglDatang').value;
+    const kodeLama = document.getElementById('editKodeLama').value;
+    const tglDatangLama = document.getElementById('editTglDatangLama').value;
+
+    try {
+      const body = {
+        kode, nama, satuan, qty, hargaBeli, hargaJual, tglDatang,
+        mode: "update",
+        kodeLama,
+        tglDatangLama
+      };
+      const res = await fetch(apiPenerimaan, {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast('Perubahan disimpan!', 'success');
+        closeEditModal();
+        localStorage.removeItem('penerimaanData');
+        localStorage.removeItem('dataBarangPenjualan');
+        await tampilkanPenerimaan(true);
+        await loadMasterData(true);
+      } else {
+        showToast('Gagal update data!', 'error');
+      }
+    } catch (err) {
+      showToast('Error koneksi API!', 'error');
+    }
+    hideLoading();
+  }
+
+  // ========== DELETE ROW ==========
+  window.deleteRow = function(idx) {
+    const data = filteredData[(currentPage - 1) * pageSize + idx];
+    if (confirm(`Hapus data kode ${data.kode} (${data.nama})?`)) {
+      showLoading("Menghapus data...");
+      fetch(apiPenerimaan + "?delete=1&kode=" + encodeURIComponent(data.kode), { method: "GET" })
+        .then(r => r.json())
+        .then(async res => {
+          if (res.success) {
+            showToast('Berhasil dihapus!', 'success');
+            localStorage.removeItem('penerimaanData');
+            localStorage.removeItem('dataBarangPenjualan');
+            await tampilkanPenerimaan(true);
+            await loadMasterData(true);
+          } else {
+            showToast('Gagal hapus data!', 'error');
+          }
+          hideLoading();
+        }).catch(() => {
+          showToast('Error koneksi API!', 'error');
+          hideLoading();
+        });
+    }
+  }
+});
+</script>
+
+</body>
+</html>

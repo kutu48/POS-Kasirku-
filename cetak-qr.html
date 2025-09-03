@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=400, initial-scale=1">
+  <!-- CDN qr-code-styling -->
+  <script src="js/qr-code-styling.js"></script>
+  <style>
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .qr-label {
+        width: 3cm;
+        height: 3cm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        page-break-after: always;
+      }
+      .qr-box {
+        width: 2.3cm !important;
+        height: 2.3cm !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.1cm auto;
+      }
+      .qr-text {
+        font-size: 9pt;
+        word-break: break-all;
+        text-align: center;
+        margin-top: 0.05cm;
+      }
+      .print-btn {
+        display: none !important;
+      }
+    }
+    .qr-label {
+      width: 3cm; height: 3cm;
+      border: 1px dashed #ccc;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: 30px auto;
+      background: white;
+    }
+    .qr-box {
+      width: 2.3cm; height: 2.3cm;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 4px;
+    }
+    .qr-text {
+      font-size: 11px;
+      text-align: center;
+      margin-top: 1px;
+      word-break: break-all;
+    }
+    .print-btn {
+      display: block;
+      margin: 18px auto 0;
+      padding: 7px 20px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="qr-label" id="label">
+    <div class="qr-box" id="qrcode"></div>
+    <div class="qr-text" id="qrinfo"></div>
+  </div>
+ <div style="display: flex; justify-content: center;">
+  <button onclick="printNotaAndroid()" class="print-btn">Cetak QR</button>
+</div>
+
+<script>
+
+  // Ambil data kode/nama dari URL
+  function getQuery(key) {
+    return new URLSearchParams(window.location.search).get(key) || "";
+  }
+  const kode = getQuery('kode');
+  const nama = getQuery('nama');
+  const logoPath = "8994f508-c00b-4cd7-9f40-a2507df8324f.png"; // samakan dengan nama file PNG kamu
+  const qrDiv = document.getElementById('qrcode');
+
+  // Fallback: jika gagal load logo, tetap generate QR tanpa logo
+  fetch(logoPath)
+    .then(resp => {
+      if (!resp.ok) throw new Error("Logo not found");
+      return resp.blob();
+    })
+    .then(() => {
+      // QR dengan logo
+      const qrCode = new QRCodeStyling({
+        width: Math.round(2.3 * (96/2.54)),    // 2.3cm in px
+        height: Math.round(2.3 * (96/2.54)),
+        data: kode,
+        image: logoPath,
+        dotsOptions: {
+          color: "#111",
+          type: "rounded"
+        },
+        imageOptions: {
+          crossOrigin: "anonymous",
+          width: 38,  // px, proporsional untuk logo
+          height: 38
+        },
+        backgroundOptions: {
+          color: "#fff"
+        }
+      });
+      qrCode.append(qrDiv);
+    })
+    .catch(() => {
+      // QR tanpa logo
+      const qrCode = new QRCodeStyling({
+        width: Math.round(2.3 * (96/2.54)),
+        height: Math.round(2.3 * (96/2.54)),
+        data: kode,
+        dotsOptions: {
+          color: "#111",
+          type: "rounded"
+        },
+        backgroundOptions: {
+          color: "#fff"
+        }
+      });
+      qrCode.append(qrDiv);
+    });
+
+  // Label bawah QR
+  document.getElementById('qrinfo').textContent = kode + (nama ? ' / ' + nama : '');
+  
+  
+function printNotaAndroid() {
+  if (window.AndroidPrint && window.AndroidPrint.printNota) {
+    window.AndroidPrint.printNota();
+  } else {
+    window.print();
+  }
+}
+</script>
+</body>
+</html>
